@@ -1,5 +1,3 @@
-PolicyShield
-
 <div align="center">
 
 <h1>🛡️ PolicyShield</h1>
@@ -25,114 +23,94 @@ PolicyShield
 
 </div>
 
-🎯 One-line thesis
+## 🎯 One-line thesis
 
 PolicyShield makes autonomous commerce controllable.
 
-An AI buyer can reason about products, prices, offers and checkout.
-PolicyShield prevents that reasoning layer from silently violating merchant economics or operational constraints.
+An AI buyer can reason about products, prices, offers and checkout. PolicyShield prevents that reasoning layer from silently violating merchant economics or operational constraints.
 
 The design principle is simple:
+**The model can recommend an action. It cannot authorize a financial mutation.**
 
-The model can recommend an action. It cannot authorize a financial mutation.
+---
 
-🔥 The Problem
+## 🔥 The Problem
 
 AI-native commerce is moving from:
-
-Human → Website → Checkout
+`Human → Website → Checkout`
 
 toward:
+`Human → AI Agent → Merchant → Payment`
 
-Human → AI Agent → Merchant → Payment
+That changes the risk boundary. A normal LLM can misunderstand:
+- discount rules
+- inventory constraints
+- customer eligibility
+- shipping requirements
+- approval thresholds
+- stale data
+- conflicting policies
 
-That changes the risk boundary.
-
-A normal LLM can misunderstand:
-
-discount rules
-
-inventory constraints
-
-customer eligibility
-
-shipping requirements
-
-approval thresholds
-
-stale data
-
-conflicting policies
-
-Example
+### Example
 
 A buyer asks:
-
-“Find me the best laptop under ₹70,000, give me the maximum discount, and deliver it tomorrow.”
+> “Find me the best laptop under ₹70,000, give me the maximum discount, and deliver it tomorrow.”
 
 The merchant has these rules:
 
-Policy
-
-Rule
-
-Premium products
-
-Max discount = 5%
-
-VIP customers
-
-Max discount = 10%
-
-Inventory
-
-Keep 3 units as reserve
-
-Express shipping
-
-Only from an eligible warehouse
-
-High-value orders
-
-> ₹50,000 requires human approval
+| Policy | Rule |
+| :--- | :--- |
+| **Premium products** | Max discount = 5% |
+| **VIP customers** | Max discount = 10% |
+| **Inventory** | Keep 3 units as reserve |
+| **Express shipping** | Only from an eligible warehouse |
+| **High-value orders** | > ₹50,000 requires human approval |
 
 A generic AI agent may produce a perfectly reasonable-looking answer while violating one of those rules.
 
-The real problem
+### The real problem
 
 How do we let AI reason autonomously while keeping the merchant's business constraints deterministic, enforceable and auditable?
 
-💡 The Core Insight
+---
+
+## 💡 The Core Insight
 
 <div align="center">
 
-AI should reason about ambiguity.
+**AI should reason about ambiguity.**
 
-Deterministic systems should enforce money and policy.
+**Deterministic systems should enforce money and policy.**
 
 </div>
 
 That gives PolicyShield a strict separation:
 
-┌──────────────────────────────────────────────┐
-│          PROBABILISTIC / AI LAYER            │
-│                                              │
-│  Intent • Context • Interpretation • Reason  │
-│  Recommendation • Explanation • Escalation  │
-└──────────────────────┬───────────────────────┘
-                       │ recommendation
-                       ▼
-┌──────────────────────────────────────────────┐
-│         TRUSTED EXECUTION BOUNDARY            │
-│                                              │
-│ Policy Gate • Permissions • Math • Idempotency│
-│ Action Executor • Verification • Audit       │
-└──────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph AI["PROBABILISTIC / AI LAYER"]
+        direction TB
+        A1["Intent • Context • Interpretation • Reason"]
+        A2["Recommendation • Explanation • Escalation"]
+    end
 
-The LLM is never part of the trusted financial execution boundary.
+    subgraph TRUST["TRUSTED EXECUTION BOUNDARY"]
+        direction TB
+        T1["Policy Gate • Permissions • Math • Idempotency"]
+        T2["Action Executor • Verification • Audit"]
+    end
 
-🧠 How PolicyShield Works
+    AI -->|Recommendation| TRUST
+```
 
+> [!IMPORTANT]
+> The LLM is **never** part of the trusted financial execution boundary.
+
+---
+
+## 🧠 How PolicyShield Works
+
+```mermaid
 flowchart LR
     A["🤖 AI Buyer"] --> B["Commerce Gateway"]
     B --> C["Context Engine"]
@@ -166,37 +144,37 @@ flowchart LR
     E --> R["Policy Versioning"]
     F --> S["AI Evaluation"]
     S --> P
+```
 
-Request lifecycle
+### Request lifecycle
 
-OBSERVE
-   ↓
-FETCH AUTHORITATIVE CONTEXT
-   ↓
-RESOLVE POLICY
-   ↓
-AI REASONING
-   ↓
-STRUCTURED RECOMMENDATION
-   ↓
-DETERMINISTIC VALIDATION
-   ↓
-┌──────────┬──────────┬──────────┬────────────┐
-│ APPROVE  │  MODIFY  │  REJECT  │  ESCALATE  │
-└────┬─────┴────┬─────┴────┬─────┴──────┬─────┘
-     │           │          │             │
-     └───────────┴──────────┴─────────────┘
-                     ↓
-                  EXECUTE
-                     ↓
-                  VERIFY
-                     ↓
-                 AUDIT
+```mermaid
+flowchart TD
+    O[OBSERVE] --> F[FETCH AUTHORITATIVE CONTEXT]
+    F --> R[RESOLVE POLICY]
+    R --> A[AI REASONING]
+    A --> S[STRUCTURED RECOMMENDATION]
+    S --> D[DETERMINISTIC VALIDATION]
+    
+    D --> AP[APPROVE]
+    D --> MO[MODIFY]
+    D --> RE[REJECT]
+    D --> ES[ESCALATE]
+    
+    AP --> EX[EXECUTE]
+    MO --> EX
+    
+    EX --> VE[VERIFY]
+    VE --> AU[AUDIT]
+```
 
-🏗️ Architecture
+---
 
-System architecture
+## 🏗️ Architecture
 
+### System architecture
+
+```mermaid
 flowchart TB
     subgraph AI["Untrusted / Probabilistic"]
         A["AI Buyer"]
@@ -244,514 +222,264 @@ flowchart TB
 
     N --> F
     N --> O
-
-Component map
-
-Component
-
-Role
-
-Trust
-
-AI Buyer
-
-Simulated autonomous buyer intent
-
-Untrusted
-
-Commerce Gateway
-
-Normalize requests and assign IDs
-
-Untrusted
-
-Context Engine
-
-Fetch authoritative commerce context
-
-Controlled
-
-Policy Compiler
-
-Convert merchant language to typed policy candidates
-
-Probabilistic + validated
-
-Policy Graph
-
-Versioned policy representation
-
-Trusted data
-
-AI Reasoning Agent
-
-Contextual reasoning and recommendation
-
-Probabilistic
-
-Deterministic Policy Gate
-
-Hard constraint enforcement
-
-Trusted
-
-Action Executor
-
-Allowlisted mutations + idempotency
-
-Trusted
-
-Razorpay Integration
-
-Test-mode payment operations
-
-Trusted boundary
-
-Verification Layer
-
-Confirm actual external state
-
-Trusted
-
-Audit Ledger
-
-Immutable decision/action history
-
-Trusted
-
-Human Approval
-
-Handles high-risk or ambiguous cases
-
-Trusted
-
-Evaluation Harness
-
-Benchmark and fault testing
-
-Controlled
-
-🤖 AI vs Deterministic Responsibilities
-
-Decision
-
-AI
-
-Deterministic
-
-Understand buyer intent
-
-✅
-
-
-
-Interpret natural-language policy
-
-✅
-
-
-
-Detect ambiguity
-
-✅
-
-
-
-Explain a policy conflict
-
-✅
-
-
-
-Select useful read tools
-
-✅
-
-
-
-Recommend approve/modify/reject/escalate
-
-✅
-
-✅ validates
-
-Calculate totals
-
-
-
-✅
-
-Calculate taxes
-
-
-
-✅
-
-Enforce discount ceiling
-
-
-
-✅
-
-Verify inventory
-
-
-
-✅
-
-Verify payment state
-
-
-
-✅
-
-Check permissions
-
-
-
-✅
-
-Generate idempotency key
-
-
-
-✅
-
-Execute financial mutation
-
-
-
-✅
-
-Audit mutation
-
-
-
-✅
-
-The rule
-
-AI proposes. Deterministic code disposes.
-
-💳 Razorpay Integration
-
-PolicyShield uses Razorpay Test Mode only.
-
-Real Razorpay integration
-
-Test-mode credentials
-
-Orders API
-
-Payment-state retrieval where required
-
-Test Checkout where appropriate
-
-Webhooks
-
-Server-side verification
-
-Simulated merchant environment
-
-Product catalogue
-
-Inventory
-
-Customer segment
-
-Shipping
-
-Promotions
-
-Merchant policy set
-
-Margin information
-
-End-to-end path
-
-AI Buyer Request
-      ↓
-PolicyShield
-      ↓
-Policy Gate
-      ↓
-APPROVED
-      ↓
-Action Executor
-      ↓
-Razorpay Test API
-      ↓
-Test Order / Payment
-      ↓
-Webhook / Verification
-      ↓
-Audit Ledger
-
-No real money is used in the MVP.
-
-🎬 Live Demo
+```
+
+### Component map
+
+| Component | Role | Trust |
+| :--- | :--- | :--- |
+| **AI Buyer** | Simulated autonomous buyer intent | Untrusted |
+| **Commerce Gateway** | Normalize requests and assign IDs | Untrusted |
+| **Context Engine** | Fetch authoritative commerce context | Controlled |
+| **Policy Compiler** | Convert merchant language to typed policy candidates | Probabilistic + validated |
+| **Policy Graph** | Versioned policy representation | Trusted data |
+| **AI Reasoning Agent** | Contextual reasoning and recommendation | Probabilistic |
+| **Deterministic Policy Gate** | Hard constraint enforcement | Trusted |
+| **Action Executor** | Allowlisted mutations + idempotency | Trusted |
+| **Razorpay Integration** | Test-mode payment operations | Trusted boundary |
+| **Verification Layer** | Confirm actual external state | Trusted |
+| **Audit Ledger** | Immutable decision/action history | Trusted |
+| **Human Approval** | Handles high-risk or ambiguous cases | Trusted |
+| **Evaluation Harness** | Benchmark and fault testing | Controlled |
+
+---
+
+## 🤖 AI vs Deterministic Responsibilities
+
+| Decision | AI | Deterministic |
+| :--- | :---: | :---: |
+| Understand buyer intent | ✅ | |
+| Interpret natural-language policy | ✅ | |
+| Detect ambiguity | ✅ | |
+| Explain a policy conflict | ✅ | |
+| Select useful read tools | ✅ | |
+| Recommend approve/modify/reject/escalate | ✅ | ✅ validates |
+| Calculate totals | | ✅ |
+| Calculate taxes | | ✅ |
+| Enforce discount ceiling | | ✅ |
+| Verify inventory | | ✅ |
+| Verify payment state | | ✅ |
+| Check permissions | | ✅ |
+| Generate idempotency key | | ✅ |
+| Execute financial mutation | | ✅ |
+| Audit mutation | | ✅ |
+
+> **The rule**: AI proposes. Deterministic code disposes.
+
+---
+
+## 💳 Razorpay Integration
+
+PolicyShield uses **Razorpay Test Mode only**.
+
+### Real Razorpay integration
+- Test-mode credentials
+- Orders API
+- Payment-state retrieval where required
+- Test Checkout where appropriate
+- Webhooks
+- Server-side verification
+
+### Simulated merchant environment
+- Product catalogue
+- Inventory
+- Customer segment
+- Shipping
+- Promotions
+- Merchant policy set
+- Margin information
+
+### End-to-end path
+
+```mermaid
+flowchart TD
+    A[AI Buyer Request] --> B[PolicyShield]
+    B --> C[Policy Gate]
+    C -->|APPROVED| D[Action Executor]
+    D --> E[Razorpay Test API]
+    E --> F[Test Order / Payment]
+    F --> G[Webhook / Verification]
+    G --> H[Audit Ledger]
+```
+
+> [!NOTE]
+> No real money is used in the MVP.
+
+---
+
+## 🎬 Live Demo
 
 The five-minute demo is designed around one realistic transaction + one deliberate failure.
 
-Scene 1 — Merchant defines the rules
-
+### Scene 1 — Merchant defines the rules
 The merchant enters:
-
-Premium products:
-maximum discount = 5%
-
-VIP:
-maximum discount = 10%
-
-Keep 3 units in reserve.
-
-Express shipping only from an eligible warehouse.
-
-Orders above ₹50,000 need approval.
+* Premium products: maximum discount = 5%
+* VIP: maximum discount = 10%
+* Keep 3 units in reserve.
+* Express shipping only from an eligible warehouse.
+* Orders above ₹50,000 need approval.
 
 PolicyShield compiles these into a versioned policy graph.
 
-Scene 2 — AI buyer asks for the "best deal"
+### Scene 2 — AI buyer asks for the "best deal"
+> “Buy the best laptop under ₹70,000, fastest delivery, maximum discount.”
 
-“Buy the best laptop under ₹70,000, fastest delivery, maximum discount.”
+The agent retrieves: price, inventory, active promotions, customer context, shipping options, applicable policies.
 
-The agent retrieves:
+**Candidate #1**
+* Price: ₹69,999
+* Promotion: 15%
+* Inventory: 2
+* Shipping: Express
 
-price
-
-inventory
-
-active promotions
-
-customer context
-
-shipping options
-
-applicable policies
-
-Candidate #1
-
-Price:        ₹69,999
-Promotion:    15%
-Inventory:    2
-Shipping:     Express
-
-Policy result
-
-❌ 15% discount > 5% permitted
-❌ 2 units < 3-unit reserve
-✅ Express shipping eligible
-
-🚨 BLOCKED / MODIFY
+**Policy result**
+* ❌ 15% discount > 5% permitted
+* ❌ 2 units < 3-unit reserve
+* ✅ Express shipping eligible
+* 🚨 **BLOCKED / MODIFY**
 
 The AI finds a compliant alternative.
 
-Candidate #2
+**Candidate #2**
+* Price: ₹68,500
+* Promotion: 5%
+* Inventory: 7
+* Shipping: Express
+* ✅ **APPROVED**
 
-Price:        ₹68,500
-Promotion:    5%
-Inventory:    7
-Shipping:     Express
-
-✅ APPROVED
-
-Scene 3 — Real Razorpay Test Mode action
-
+### Scene 3 — Real Razorpay Test Mode action
 PolicyShield creates a real Razorpay Test Mode order.
-
 The UI shows:
+* **Decision**: APPROVED
+* **Amount**: ₹68,500
+* **Policy Version**: v12
+* **Action ID**: action_1042
+* **Razorpay Order**: order_XXXXXXXX
 
-Decision:       APPROVED
-Amount:         ₹68,500
-Policy Version: v12
-Action ID:      action_1042
-Razorpay Order: order_XXXXXXXX
-
-Scene 4 — Break the system
-
-Inject fault #1
-
-Inventory changes:
-
-7 units → 0 units
-
-after validation but before execution.
-
+### Scene 4 — Break the system
+Inject fault #1: Inventory changes (7 units → 0 units) after validation but before execution.
 PolicyShield re-fetches the authoritative inventory.
+* ⚠️ **STATE CHANGED**
+* The action is stopped. No unsafe purchase proceeds.
 
-⚠️ STATE CHANGED
+### Scene 5 — Break the payment integration
+Inject: Razorpay API timeout
 
-The action is stopped.
+**Naive implementation:**
+`timeout → retry`
 
-No unsafe purchase proceeds.
-
-Scene 5 — Break the payment integration
-
-Inject:
-
-Razorpay API timeout
-
-Naive implementation:
-
-timeout → retry
-
-PolicyShield:
-
-timeout
-   ↓
-EXECUTION_UNKNOWN
-   ↓
-verify authoritative state
-   ↓
-already exists? → reuse
-not found?      → safe retry
-still unknown?  → escalate
+**PolicyShield:**
+```mermaid
+flowchart TD
+    A[timeout] --> B[EXECUTION_UNKNOWN]
+    B --> C[verify authoritative state]
+    C -->|already exists?| D[reuse]
+    C -->|not found?| E[safe retry]
+    C -->|still unknown?| F[escalate]
+```
 
 This is the failure-recovery moment.
 
-📊 Evaluation
+---
+
+## 📊 Evaluation
 
 We benchmark the system on 1,000 synthetic scenarios.
 
-Suggested distribution
+### Suggested distribution
 
-Category
+| Category | Cases |
+| :--- | :--- |
+| Normal | 600 |
+| Ambiguous policies | 100 |
+| Policy conflicts | 100 |
+| State changes | 75 |
+| Tool failures | 50 |
+| Adversarial / prompt injection | 50 |
+| High-value approvals | 25 |
+| **Total** | **1,000** |
 
-Cases
+### Baselines
+1. Naive LLM
+2. Rules-only
+3. PolicyShield
 
-Normal
+### Primary metrics
+- Policy adherence
+- Decision accuracy
+- Unsafe autonomous action rate
+- False-block rate
+- Escalation precision
+- Failure-recovery success
+- Median / p95 latency
+- Tool-call count
 
-600
+### Safety metric
+`UNSAFE_AUTONOMOUS_ACTION_RATE` -> **Target: 0**
 
-Ambiguous policies
+> [!NOTE]
+> Measured results will be added only after the benchmark has actually been run.
 
-100
+---
 
-Policy conflicts
+## 🛡️ Security Model
 
-100
+PolicyShield is designed around **least privilege + fail closed**.
 
-State changes
+### Threats considered
+- prompt injection
+- malicious buyer instructions
+- policy poisoning
+- stale context
+- tool abuse
+- duplicate requests
+- webhook replay/spoofing
+- secret leakage
+- compromised model output
+- policy conflicts
+- privilege escalation
 
-75
+### Hard rules
+The system will **never** automatically:
+- override a merchant policy
+- invent payment state
+- invent inventory
+- retry an uncertain financial action blindly
+- grant itself permissions
+- modify a policy to make its proposal succeed
+- expose credentials
+- delete audit history
 
-Tool failures
+### Trust boundary
 
-50
+```mermaid
+flowchart TD
+    subgraph AI["AI / MODEL"]
+        direction TB
+        A1["Can reason"]
+        A2["Can recommend"]
+        A3["Can explain"]
+    end
 
-Adversarial / prompt injection
+    subgraph TRUST["DETERMINISTIC CONTROL"]
+        direction TB
+        T1["Policy"]
+        T2["Permissions"]
+        T3["Idempotency"]
+        T4["State verification"]
+        T5["Financial execution"]
+    end
 
-50
+    AI -.->|NO DIRECT MONEY AUTHORITY| TRUST
+```
 
-High-value approvals
+---
 
-25
+## ⚡ Failure Recovery
 
-Total
+### Explicit transaction states
 
-1,000
-
-Baselines
-
-Naive LLM
-
-Rules-only
-
-PolicyShield
-
-Primary metrics
-
-Policy adherence
-Decision accuracy
-Unsafe autonomous action rate
-False-block rate
-Escalation precision
-Failure-recovery success
-Median / p95 latency
-Tool-call count
-
-Safety metric
-
-UNSAFE_AUTONOMOUS_ACTION_RATE
-
-Target: 0
-
-Measured results will be added only after the benchmark has actually been run.
-
-🛡️ Security Model
-
-PolicyShield is designed around least privilege + fail closed.
-
-Threats considered
-
-prompt injection
-
-malicious buyer instructions
-
-policy poisoning
-
-stale context
-
-tool abuse
-
-duplicate requests
-
-webhook replay/spoofing
-
-secret leakage
-
-compromised model output
-
-policy conflicts
-
-privilege escalation
-
-Hard rules
-
-The system will never automatically:
-
-override a merchant policy
-
-invent payment state
-
-invent inventory
-
-retry an uncertain financial action blindly
-
-grant itself permissions
-
-modify a policy to make its proposal succeed
-
-expose credentials
-
-delete audit history
-
-Trust boundary
-
-                     ┌─────────────────────────┐
-                     │      AI / MODEL         │
-                     │                         │
-                     │  Can reason             │
-                     │  Can recommend         │
-                     │  Can explain           │
-                     └────────────┬────────────┘
-                                  │
-                                  │ NO DIRECT MONEY AUTHORITY
-                                  ▼
-                     ┌─────────────────────────┐
-                     │ DETERMINISTIC CONTROL   │
-                     │                         │
-                     │ Policy                  │
-                     │ Permissions             │
-                     │ Idempotency             │
-                     │ State verification      │
-                     │ Financial execution     │
-                     └─────────────────────────┘
-
-⚡ Failure Recovery
-
-Explicit transaction states
-
+```mermaid
 stateDiagram-v2
     [*] --> PROPOSED
     PROPOSED --> VALIDATED
@@ -775,38 +503,38 @@ stateDiagram-v2
     VERIFIED_FAILURE --> [*]
     BLOCKED --> [*]
     ESCALATED --> [*]
+```
 
-Key principle
-
+### Key principle
 A timeout is a transport result — not proof that the business action failed.
 
-Therefore:
+```mermaid
+flowchart TD
+    A[EXECUTING] --> B[EXECUTION_UNKNOWN]
+    B --> C[VERIFY]
+    C -->|action exists| D[reuse]
+    C -->|action absent| E[bounded retry]
+    C -->|state unclear| F[human escalation]
+```
 
-EXECUTING
-    ↓
-EXECUTION_UNKNOWN
-    ↓
-VERIFY
-    ├── action exists → reuse
-    ├── action absent → bounded retry
-    └── state unclear → human escalation
+---
 
-🔁 Idempotency
+## 🔁 Idempotency
 
 Every mutating intent receives:
+- `intent_id`
+- `action_id`
+- `idempotency_key`
 
-intent_id
-action_id
-idempotency_key
+Duplicate requests do not create duplicate financial actions. The system checks existing action state before retry.
 
-Duplicate requests do not create duplicate financial actions.
+---
 
-The system checks existing action state before retry.
-
-📜 Auditability
+## 📜 Auditability
 
 Every important decision records:
 
+```json
 {
   "intent_id": "intent_42",
   "action_id": "action_12",
@@ -818,11 +546,15 @@ Every important decision records:
   "verification": "SUCCESS",
   "timestamp": "..."
 }
+```
 
 No secrets or unnecessary sensitive information are stored.
 
-📁 Repository
+---
 
+## 📁 Repository
+
+```text
 policyshield/
 │
 ├── README.md
@@ -852,21 +584,21 @@ policyshield/
 ├── policies/
 │
 └── evaluation/
+```
 
-🚀 Quick Start
+---
 
-Prerequisites
+## 🚀 Quick Start
 
-Node.js / Python according to the implementation
+### Prerequisites
+- Node.js / Python according to the implementation
+- Git
+- Razorpay Test Mode credentials
+- Optional Docker
 
-Git
+### Setup
 
-Razorpay Test Mode credentials
-
-Optional Docker
-
-Setup
-
+```bash
 git clone <repository-url>
 cd policyshield
 
@@ -876,41 +608,39 @@ cp .env.example .env
 # Install dependencies
 # Start backend
 # Start frontend
+```
 
-Environment variables
+### Environment variables
 
+```env
 RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
 RAZORPAY_WEBHOOK_SECRET=
+```
 
-Never commit .env.
+> [!CAUTION]
+> Never commit `.env`.
 
-📈 What We Actually Prove
+---
+
+## 📈 What We Actually Prove
 
 PolicyShield is not evaluated by how impressive the UI looks.
 
 We want evidence that:
-
-AI reasoning
-      +
-deterministic enforcement
-      +
-real Razorpay Test Mode integration
-      +
-failure recovery
-      +
-measurable evaluation
-
+`AI reasoning + deterministic enforcement + real Razorpay Test Mode integration + failure recovery + measurable evaluation`
 produces safer and more reliable agentic commerce than a naive LLM.
 
 Benchmark results shown in this repository must come from the actual evaluation run.
 
-🧭 Engineering Thesis
+---
+
+## 🧭 Engineering Thesis
 
 <div align="center">
 
-We don't trust the model with the money.
+**We don't trust the model with the money.**
 
-We trust the architecture.
+**We trust the architecture.**
 
 </div>
