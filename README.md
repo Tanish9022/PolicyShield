@@ -1,405 +1,916 @@
 PolicyShield
 
-AI Policy Compiler + Runtime Guard for Agentic Commerce
+<div align="center">
 
-AI can reason.
-Merchants define the rules.
-Deterministic systems enforce them.
+<h1>🛡️ PolicyShield</h1>
+
+<h3>AI Policy Compiler + Runtime Guard for Agentic Commerce</h3>
+
+<p>
+  <strong>AI can reason.</strong>
+  &nbsp;•&nbsp;
+  <strong>Merchants define the rules.</strong>
+  &nbsp;•&nbsp;
+  <strong>Deterministic systems enforce them.</strong>
+</p>
+
+<p>
+  <a href="#-the-problem">Problem</a> ·
+  <a href="#-how-policyshield-works">Architecture</a> ·
+  <a href="#-live-demo">Demo</a> ·
+  <a href="#-evaluation">Evaluation</a> ·
+  <a href="#-security-model">Security</a> ·
+  <a href="#-razorpay-integration">Razorpay</a>
+</p>
+
+</div>
+
+🎯 One-line thesis
 
 PolicyShield makes autonomous commerce controllable.
 
-The Problem
+An AI buyer can reason about products, prices, offers and checkout.
+PolicyShield prevents that reasoning layer from silently violating merchant economics or operational constraints.
 
-AI buyers can autonomously discover products, compare offers and initiate checkout. The risk is not only whether an AI can complete a purchase; it is whether the agent can do so without silently violating the merchant's economics or operational constraints.
+The design principle is simple:
 
-Example merchant policies:
+The model can recommend an action. It cannot authorize a financial mutation.
 
-Premium products: maximum discount = 5%
+🔥 The Problem
 
-VIP customers: maximum discount = 10%
+AI-native commerce is moving from:
 
-Maintain an inventory buffer of 3 units
+Human → Website → Checkout
 
-Express delivery is allowed only from an eligible warehouse
+toward:
 
-Orders above ₹50,000 require human approval
+Human → AI Agent → Merchant → Payment
 
-A generic LLM may understand these rules, but understanding is not enforcement. A model can misinterpret a policy, use stale context, follow a malicious buyer instruction, or retry an uncertain financial action.
+That changes the risk boundary.
 
-Core Insight
+A normal LLM can misunderstand:
 
-AI should reason about ambiguous context. Deterministic systems should enforce financial and merchant constraints.
+discount rules
 
-PolicyShield therefore separates:
+inventory constraints
 
-Natural-language merchant policies
-                ↓
-         Policy Compiler
-                ↓
-          Typed Policy Graph
-                ↓
-        AI Contextual Reasoning
-                ↓
-      Deterministic Policy Gate
-                ↓
-          Action Executor
-                ↓
-        Razorpay Test APIs
-                ↓
-          Verification
-                ↓
-            Audit
+customer eligibility
+
+shipping requirements
+
+approval thresholds
+
+stale data
+
+conflicting policies
+
+Example
+
+A buyer asks:
+
+“Find me the best laptop under ₹70,000, give me the maximum discount, and deliver it tomorrow.”
+
+The merchant has these rules:
+
+Policy
+
+Rule
+
+Premium products
+
+Max discount = 5%
+
+VIP customers
+
+Max discount = 10%
+
+Inventory
+
+Keep 3 units as reserve
+
+Express shipping
+
+Only from an eligible warehouse
+
+High-value orders
+
+> ₹50,000 requires human approval
+
+A generic AI agent may produce a perfectly reasonable-looking answer while violating one of those rules.
+
+The real problem
+
+How do we let AI reason autonomously while keeping the merchant's business constraints deterministic, enforceable and auditable?
+
+💡 The Core Insight
+
+<div align="center">
+
+AI should reason about ambiguity.
+
+Deterministic systems should enforce money and policy.
+
+</div>
+
+That gives PolicyShield a strict separation:
+
+┌──────────────────────────────────────────────┐
+│          PROBABILISTIC / AI LAYER            │
+│                                              │
+│  Intent • Context • Interpretation • Reason  │
+│  Recommendation • Explanation • Escalation  │
+└──────────────────────┬───────────────────────┘
+                       │ recommendation
+                       ▼
+┌──────────────────────────────────────────────┐
+│         TRUSTED EXECUTION BOUNDARY            │
+│                                              │
+│ Policy Gate • Permissions • Math • Idempotency│
+│ Action Executor • Verification • Audit       │
+└──────────────────────────────────────────────┘
 
 The LLM is never part of the trusted financial execution boundary.
 
-Before vs After
-
-Scenario
-
-Naive AI commerce
-
-PolicyShield
-
-15% discount, merchant cap 5%
-
-May approve
-
-Deterministic gate blocks
-
-Inventory falls below reserve
-
-May continue
-
-Revalidates and stops/modifies
-
-Policy is ambiguous
-
-May guess
-
-Escalates
-
-Payment API times out
-
-May blindly retry
-
-Enters EXECUTION_UNKNOWN, verifies state
-
-High-value order
-
-May execute
-
-Human approval gate
-
-User says "ignore merchant rules"
-
-May follow instruction
-
-Merchant policy remains authoritative
-
-Five-minute demo
-
-Merchant loads five policies in natural language.
-
-Policy Compiler creates versioned structured policies.
-
-AI buyer requests a laptop with the "maximum discount" and fastest delivery.
-
-PolicyShield gathers price, inventory, promotion, shipping and customer context.
-
-AI proposes an action.
-
-Deterministic gate rejects the invalid discount and selects a compliant alternative.
-
-A Razorpay Test Mode order is created.
-
-We inject an inventory change after validation and show the transaction being stopped.
-
-We inject a Razorpay integration timeout and show EXECUTION_UNKNOWN → verification → safe resume/stop.
-
-We run the same architecture against a 1,000-case adversarial evaluation suite.
-
-Architecture at a glance
+🧠 How PolicyShield Works
 
 flowchart LR
-    A[AI Buyer] --> B[Commerce Gateway]
-    B --> C[Context Engine]
-    C --> D[Policy Compiler]
-    D --> E[Policy Graph]
-    E --> F[AI Reasoning Agent]
+    A["🤖 AI Buyer"] --> B["Commerce Gateway"]
+    B --> C["Context Engine"]
 
-    F --> G{Deterministic Policy Gate}
+    M["Merchant Natural-Language Policies"] --> D["Policy Compiler"]
+    D --> E["Versioned Policy Graph"]
 
-    G -->|Approve| H[Action Executor]
-    G -->|Modify| I[Modified Action]
-    G -->|Reject| J[Blocked]
-    G -->|Escalate| K[Human Approval]
+    C --> F["AI Reasoning Agent"]
+    E --> F
+
+    F --> G{"Deterministic\nPolicy Gate"}
+
+    G -->|APPROVE| H["Action Executor"]
+    G -->|MODIFY| I["Modified Action"]
+    G -->|REJECT| J["Blocked"]
+    G -->|ESCALATE| K["Human Approval"]
 
     I --> G
     K --> G
 
-    H --> L[Razorpay Test APIs]
-    L --> M[Verification Layer]
+    H --> L["Razorpay Test APIs"]
+    L --> N["Verification Layer"]
 
-    M --> N[Audit Ledger]
-    M --> O[Observability]
+    N --> O["Audit Ledger"]
+    N --> P["Observability"]
 
-    P[Chaos / Fault Injector] -.-> L
-    P -.-> C
-    P -.-> M
+    Q["⚡ Chaos / Fault Injector"] -.-> L
+    Q -.-> C
+    Q -.-> N
 
-    E --> Q[Policy Versioning]
-    F --> R[AI Evaluation]
-    R --> O
+    E --> R["Policy Versioning"]
+    F --> S["AI Evaluation"]
+    S --> P
 
-Razorpay integration
+Request lifecycle
 
-Real
+OBSERVE
+   ↓
+FETCH AUTHORITATIVE CONTEXT
+   ↓
+RESOLVE POLICY
+   ↓
+AI REASONING
+   ↓
+STRUCTURED RECOMMENDATION
+   ↓
+DETERMINISTIC VALIDATION
+   ↓
+┌──────────┬──────────┬──────────┬────────────┐
+│ APPROVE  │  MODIFY  │  REJECT  │  ESCALATE  │
+└────┬─────┴────┬─────┴────┬─────┴──────┬─────┘
+     │           │          │             │
+     └───────────┴──────────┴─────────────┘
+                     ↓
+                  EXECUTE
+                     ↓
+                  VERIFY
+                     ↓
+                 AUDIT
 
-Razorpay Test Mode authentication
+🏗️ Architecture
 
-Test Orders
+System architecture
 
-Test payment state retrieval where used
+flowchart TB
+    subgraph AI["Untrusted / Probabilistic"]
+        A["AI Buyer"]
+        B["Commerce Gateway"]
+        C["Context Engine"]
+        D["Policy Compiler"]
+        E["Policy Graph"]
+        F["AI Reasoning Agent"]
+    end
 
-Test webhooks
+    subgraph TRUST["Trusted Financial Execution Boundary"]
+        G["Deterministic Policy Gate"]
+        H["Action Executor"]
+        I["Razorpay Integration"]
+        J["Verification Layer"]
+        K["Audit Ledger"]
+    end
 
-Server-side state verification
+    L["Human Approval"]
+    M["Chaos / Fault Injector"]
+    N["Evaluation Harness"]
+    O["Metrics / Observability"]
 
-Test Checkout where used
+    A --> B
+    B --> C
+    D --> E
+    C --> F
+    E --> F
+    F --> G
 
-Simulated merchant environment
+    G -->|approve| H
+    G -->|modify| G
+    G -->|escalate| L
+    G -->|reject| O
 
-Product catalogue
+    L --> G
+    H --> I
+    I --> J
+    J --> K
+    J --> O
 
-Merchant policies
+    M -.-> I
+    M -.-> C
+    M -.-> J
 
-Inventory
+    N --> F
+    N --> O
 
-Customer segments
+Component map
 
-Shipping rules
+Component
 
-Promotions
+Role
 
-Margin data
+Trust
 
-No real money is used in the MVP. Test credentials remain server-side and are never committed to the repository.
+AI Buyer
 
-AI vs deterministic responsibilities
+Simulated autonomous buyer intent
 
-Responsibility
+Untrusted
+
+Commerce Gateway
+
+Normalize requests and assign IDs
+
+Untrusted
+
+Context Engine
+
+Fetch authoritative commerce context
+
+Controlled
+
+Policy Compiler
+
+Convert merchant language to typed policy candidates
+
+Probabilistic + validated
+
+Policy Graph
+
+Versioned policy representation
+
+Trusted data
+
+AI Reasoning Agent
+
+Contextual reasoning and recommendation
+
+Probabilistic
+
+Deterministic Policy Gate
+
+Hard constraint enforcement
+
+Trusted
+
+Action Executor
+
+Allowlisted mutations + idempotency
+
+Trusted
+
+Razorpay Integration
+
+Test-mode payment operations
+
+Trusted boundary
+
+Verification Layer
+
+Confirm actual external state
+
+Trusted
+
+Audit Ledger
+
+Immutable decision/action history
+
+Trusted
+
+Human Approval
+
+Handles high-risk or ambiguous cases
+
+Trusted
+
+Evaluation Harness
+
+Benchmark and fault testing
+
+Controlled
+
+🤖 AI vs Deterministic Responsibilities
+
+Decision
 
 AI
 
 Deterministic
 
+Understand buyer intent
+
+✅
+
+
+
 Interpret natural-language policy
 
-Yes
+✅
 
-Validation
+
 
 Detect ambiguity
 
-Yes
+✅
 
-Escalation rules
 
-Contextual recommendation
 
-Yes
+Explain a policy conflict
 
-Policy gate
+✅
 
-Policy conflict explanation
 
-Yes
 
-Precedence enforcement
+Select useful read tools
 
-Arithmetic / tax / totals
+✅
 
-No
 
-Yes
 
-Payment state
+Recommend approve/modify/reject/escalate
 
-No
+✅
 
-Yes
+✅ validates
 
-Inventory truth
+Calculate totals
 
-No
 
-Yes
 
-Permission checks
+✅
 
-No
+Calculate taxes
 
-Yes
 
-Idempotency
 
-No
+✅
 
-Yes
+Enforce discount ceiling
 
-Financial execution
 
-No
 
-Yes
+✅
 
-Audit logging
+Verify inventory
 
-No
 
-Yes
 
-Safety
+✅
 
-PolicyShield uses:
+Verify payment state
 
-deterministic policy gates
 
-least-privilege tools
 
-action allowlists
+✅
 
-idempotency keys
+Check permissions
 
-state verification
 
-human approval thresholds
 
-explicit EXECUTION_UNKNOWN state
+✅
 
-audit records
+Generate idempotency key
 
-prompt-injection defenses
 
-fail-closed behavior for dangerous actions
 
-Evaluation
+✅
 
-The benchmark contains 1,000 synthetic transaction scenarios covering normal cases, ambiguous policies, policy conflicts, state changes, tool failures, adversarial instructions and high-value approvals.
+Execute financial mutation
 
-Primary metrics:
 
-policy adherence
 
-decision accuracy
+✅
 
-unsafe autonomous action rate
+Audit mutation
 
-false-block rate
 
-escalation precision
 
-recovery success
+✅
 
-latency
+The rule
 
-tool-call count
+AI proposes. Deterministic code disposes.
 
-Benchmark values shown here must be generated from the actual evaluation run. No results are fabricated in this repository.
+💳 Razorpay Integration
 
-See EVALUATION.md.
+PolicyShield uses Razorpay Test Mode only.
 
-Failure recovery
+Real Razorpay integration
 
-Example:
+Test-mode credentials
 
-Razorpay request timeout
-        ↓
+Orders API
+
+Payment-state retrieval where required
+
+Test Checkout where appropriate
+
+Webhooks
+
+Server-side verification
+
+Simulated merchant environment
+
+Product catalogue
+
+Inventory
+
+Customer segment
+
+Shipping
+
+Promotions
+
+Merchant policy set
+
+Margin information
+
+End-to-end path
+
+AI Buyer Request
+      ↓
+PolicyShield
+      ↓
+Policy Gate
+      ↓
+APPROVED
+      ↓
+Action Executor
+      ↓
+Razorpay Test API
+      ↓
+Test Order / Payment
+      ↓
+Webhook / Verification
+      ↓
+Audit Ledger
+
+No real money is used in the MVP.
+
+🎬 Live Demo
+
+The five-minute demo is designed around one realistic transaction + one deliberate failure.
+
+Scene 1 — Merchant defines the rules
+
+The merchant enters:
+
+Premium products:
+maximum discount = 5%
+
+VIP:
+maximum discount = 10%
+
+Keep 3 units in reserve.
+
+Express shipping only from an eligible warehouse.
+
+Orders above ₹50,000 need approval.
+
+PolicyShield compiles these into a versioned policy graph.
+
+Scene 2 — AI buyer asks for the "best deal"
+
+“Buy the best laptop under ₹70,000, fastest delivery, maximum discount.”
+
+The agent retrieves:
+
+price
+
+inventory
+
+active promotions
+
+customer context
+
+shipping options
+
+applicable policies
+
+Candidate #1
+
+Price:        ₹69,999
+Promotion:    15%
+Inventory:    2
+Shipping:     Express
+
+Policy result
+
+❌ 15% discount > 5% permitted
+❌ 2 units < 3-unit reserve
+✅ Express shipping eligible
+
+🚨 BLOCKED / MODIFY
+
+The AI finds a compliant alternative.
+
+Candidate #2
+
+Price:        ₹68,500
+Promotion:    5%
+Inventory:    7
+Shipping:     Express
+
+✅ APPROVED
+
+Scene 3 — Real Razorpay Test Mode action
+
+PolicyShield creates a real Razorpay Test Mode order.
+
+The UI shows:
+
+Decision:       APPROVED
+Amount:         ₹68,500
+Policy Version: v12
+Action ID:      action_1042
+Razorpay Order: order_XXXXXXXX
+
+Scene 4 — Break the system
+
+Inject fault #1
+
+Inventory changes:
+
+7 units → 0 units
+
+after validation but before execution.
+
+PolicyShield re-fetches the authoritative inventory.
+
+⚠️ STATE CHANGED
+
+The action is stopped.
+
+No unsafe purchase proceeds.
+
+Scene 5 — Break the payment integration
+
+Inject:
+
+Razorpay API timeout
+
+Naive implementation:
+
+timeout → retry
+
+PolicyShield:
+
+timeout
+   ↓
 EXECUTION_UNKNOWN
-        ↓
-Query authoritative state
-        ↓
-Existing action found? ── Yes ──> Reuse / verify
-        │
-        No
-        ↓
-Safe retry
+   ↓
+verify authoritative state
+   ↓
+already exists? → reuse
+not found?      → safe retry
+still unknown?  → escalate
 
-The key principle is:
+This is the failure-recovery moment.
 
-External failure does not imply business-action failure.
+📊 Evaluation
 
-See FAILURE_RECOVERY.md.
+We benchmark the system on 1,000 synthetic scenarios.
 
-Repository structure
+Suggested distribution
+
+Category
+
+Cases
+
+Normal
+
+600
+
+Ambiguous policies
+
+100
+
+Policy conflicts
+
+100
+
+State changes
+
+75
+
+Tool failures
+
+50
+
+Adversarial / prompt injection
+
+50
+
+High-value approvals
+
+25
+
+Total
+
+1,000
+
+Baselines
+
+Naive LLM
+
+Rules-only
+
+PolicyShield
+
+Primary metrics
+
+Policy adherence
+Decision accuracy
+Unsafe autonomous action rate
+False-block rate
+Escalation precision
+Failure-recovery success
+Median / p95 latency
+Tool-call count
+
+Safety metric
+
+UNSAFE_AUTONOMOUS_ACTION_RATE
+
+Target: 0
+
+Measured results will be added only after the benchmark has actually been run.
+
+🛡️ Security Model
+
+PolicyShield is designed around least privilege + fail closed.
+
+Threats considered
+
+prompt injection
+
+malicious buyer instructions
+
+policy poisoning
+
+stale context
+
+tool abuse
+
+duplicate requests
+
+webhook replay/spoofing
+
+secret leakage
+
+compromised model output
+
+policy conflicts
+
+privilege escalation
+
+Hard rules
+
+The system will never automatically:
+
+override a merchant policy
+
+invent payment state
+
+invent inventory
+
+retry an uncertain financial action blindly
+
+grant itself permissions
+
+modify a policy to make its proposal succeed
+
+expose credentials
+
+delete audit history
+
+Trust boundary
+
+                     ┌─────────────────────────┐
+                     │      AI / MODEL         │
+                     │                         │
+                     │  Can reason             │
+                     │  Can recommend         │
+                     │  Can explain           │
+                     └────────────┬────────────┘
+                                  │
+                                  │ NO DIRECT MONEY AUTHORITY
+                                  ▼
+                     ┌─────────────────────────┐
+                     │ DETERMINISTIC CONTROL   │
+                     │                         │
+                     │ Policy                  │
+                     │ Permissions             │
+                     │ Idempotency             │
+                     │ State verification      │
+                     │ Financial execution     │
+                     └─────────────────────────┘
+
+⚡ Failure Recovery
+
+Explicit transaction states
+
+stateDiagram-v2
+    [*] --> PROPOSED
+    PROPOSED --> VALIDATED
+    PROPOSED --> ESCALATED
+
+    VALIDATED --> BLOCKED
+    VALIDATED --> EXECUTING
+    VALIDATED --> ESCALATED
+
+    EXECUTING --> EXECUTION_UNKNOWN
+    EXECUTING --> VERIFIED_SUCCESS
+    EXECUTING --> VERIFIED_FAILURE
+
+    EXECUTION_UNKNOWN --> VERIFYING
+
+    VERIFYING --> VERIFIED_SUCCESS
+    VERIFYING --> VERIFIED_FAILURE
+    VERIFYING --> ESCALATED
+
+    VERIFIED_SUCCESS --> [*]
+    VERIFIED_FAILURE --> [*]
+    BLOCKED --> [*]
+    ESCALATED --> [*]
+
+Key principle
+
+A timeout is a transport result — not proof that the business action failed.
+
+Therefore:
+
+EXECUTING
+    ↓
+EXECUTION_UNKNOWN
+    ↓
+VERIFY
+    ├── action exists → reuse
+    ├── action absent → bounded retry
+    └── state unclear → human escalation
+
+🔁 Idempotency
+
+Every mutating intent receives:
+
+intent_id
+action_id
+idempotency_key
+
+Duplicate requests do not create duplicate financial actions.
+
+The system checks existing action state before retry.
+
+📜 Auditability
+
+Every important decision records:
+
+{
+  "intent_id": "intent_42",
+  "action_id": "action_12",
+  "policy_version": "v12",
+  "decision": "MODIFY",
+  "policy_ids": ["P-001", "P-003"],
+  "evidence_refs": ["ctx_01", "ctx_02"],
+  "action_type": "APPLY_DISCOUNT",
+  "verification": "SUCCESS",
+  "timestamp": "..."
+}
+
+No secrets or unnecessary sensitive information are stored.
+
+📁 Repository
 
 policyshield/
+│
 ├── README.md
 ├── ARCHITECTURE.md
 ├── AI_AGENT_SPEC.md
 ├── SECURITY_AND_GUARDRAILS.md
 ├── EVALUATION.md
 ├── FAILURE_RECOVERY.md
+│
 ├── apps/
+│   ├── merchant-dashboard/
+│   └── buyer-simulator/
+│
 ├── services/
+│   ├── commerce-gateway/
+│   ├── context-engine/
+│   ├── policy-compiler/
+│   ├── policy-gate/
+│   ├── agent/
+│   ├── executor/
+│   ├── verification/
+│   └── audit/
+│
 ├── integrations/
+│   └── razorpay/
+│
 ├── policies/
+│
 └── evaluation/
 
-Quick start
+🚀 Quick Start
 
-Prerequisites:
+Prerequisites
 
-Node.js or Python, depending on the implementation
+Node.js / Python according to the implementation
 
-Docker (optional)
+Git
 
 Razorpay Test Mode credentials
 
-Example:
+Optional Docker
+
+Setup
 
 git clone <repository-url>
 cd policyshield
 
 cp .env.example .env
-# Add Razorpay TEST credentials only to .env
 
+# Add Razorpay TEST credentials to .env
 # Install dependencies
-# Start local services
-# Run the application
-
-Use the exact project commands documented by the implementation once the codebase is wired.
+# Start backend
+# Start frontend
 
 Environment variables
-
-Expected server-side configuration includes:
 
 RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
 RAZORPAY_WEBHOOK_SECRET=
 
-Never commit .env. Commit only .env.example.
+Never commit .env.
 
-Current limitations
+📈 What We Actually Prove
 
-The MVP intentionally uses a simulated merchant environment for product, inventory, customer, shipping and promotion data. Razorpay integration is limited to Test Mode.
+PolicyShield is not evaluated by how impressive the UI looks.
 
-The benchmark is synthetic. Results should not be presented as production performance.
+We want evidence that:
 
-PolicyShield does not claim to replace a merchant's legal, compliance or operational controls.
+AI reasoning
+      +
+deterministic enforcement
+      +
+real Razorpay Test Mode integration
+      +
+failure recovery
+      +
+measurable evaluation
 
-Why this is not just a chatbot
+produces safer and more reliable agentic commerce than a naive LLM.
 
-The system is an execution pipeline:
+Benchmark results shown in this repository must come from the actual evaluation run.
 
-observe
-  → reason
-  → propose
-  → deterministic gate
-  → execute
-  → verify
-  → audit / escalate
+🧭 Engineering Thesis
 
-The model can recommend an action. It cannot authorize a financial mutation.
+<div align="center">
 
-We don't trust the model with the money. We trust the architecture.
+We don't trust the model with the money.
+
+We trust the architecture.
+
+</div>
