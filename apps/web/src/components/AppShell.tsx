@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Shield, LayoutDashboard, FileText, Bot, ListOrdered, AlertOctagon, Activity, Search, FlaskConical, Play } from 'lucide-react';
 

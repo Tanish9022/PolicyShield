@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, ShieldCheck, ShieldAlert, CheckCircle, Database } from 'lucide-react';
+import { ArrowLeft, Clock, ShieldCheck, ShieldAlert, Database } from 'lucide-react';
 import { StatusBadge } from '../components/StatusBadge';
 
 export default function DecisionDetail() {
@@ -52,7 +52,7 @@ export default function DecisionDetail() {
           
           <div className="space-y-0 relative before:absolute before:inset-0 before:ml-[1.4rem] before:h-full before:w-px before:bg-border">
             
-            {audit_events.map((event, idx) => (
+            {audit_events.map((event) => (
               <div key={event.event_id} className="relative pl-12 py-4">
                 <div className={`absolute left-4 top-5 w-3 h-3 rounded-full border border-background shadow-sm -translate-x-1.5 
                   ${event.event_type.includes('FAIL') || event.event_type.includes('BLOCK') ? 'bg-rose-500' : 

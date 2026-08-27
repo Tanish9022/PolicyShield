@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Cpu, ShieldAlert, Key, Server, Database } from 'lucide-react';
+import { Send, Bot, User, Cpu, ShieldAlert, Server, Database } from 'lucide-react';
 import { StatusBadge } from '../components/StatusBadge';
 
 export default function AiBuyer() {

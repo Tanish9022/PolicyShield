@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FlaskConical, Target, CheckCircle, ShieldAlert, Activity, Cpu, Lock, AlertTriangle } from 'lucide-react';
-import { MetricCard } from '../components/MetricCard';
+import { FlaskConical, Target, ShieldAlert, Activity, Cpu, Lock, AlertTriangle } from 'lucide-react';
 
 export default function Evaluation() {
   const [metrics, setMetrics] = useState<any>(null);

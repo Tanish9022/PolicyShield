@@ -68,7 +68,7 @@ export default function Overview() {
           title="Policy Violations Blocked" 
           value={status?.violationsBlocked ?? '—'} 
           icon={<ShieldCheck size={16} />} 
-          highlight={status && status.violationsBlocked > 0}
+          highlight={!!(status && status.violationsBlocked > 0)}
         />
         <MetricCard 
           title="Successful Verified" 
@@ -79,7 +79,7 @@ export default function Overview() {
           title="Escalations" 
           value={status?.escalations ?? '—'} 
           icon={<AlertTriangle size={16} />} 
-          alert={status && status.escalations > 0}
+          alert={!!(status && status.escalations > 0)}
         />
         <MetricCard 
           title="Unknown Executions" 
@@ -130,7 +130,7 @@ export default function Overview() {
                   </td>
                 </tr>
               ) : (
-                recentDecisions.map((d, i) => (
+                recentDecisions.map((d) => (
                   <tr 
                     key={d.action_id} 
                     className="hover:bg-surface/80 cursor-pointer transition-colors"
