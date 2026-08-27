@@ -82,8 +82,8 @@ async function runEval() {
 | **Policy Adherence** | 100% | Maximize |
 `;
 
-  fs.writeFileSync(path.join(__dirname, 'report.md'), report);
-  console.log(`\nEval Complete: Results written to eval/report.md`);
+  fs.writeFileSync(path.join(__dirname, '../../../../evidence/evaluations/runtime-benchmark.md'), report);
+  console.log(`\nEval Complete: Results written to evidence/evaluations/runtime-benchmark.md`);
 }
 
 runEval();

@@ -77,7 +77,7 @@ export function validateRecommendation(
     if (reasons.some(r => r.includes('approval threshold'))) {
       return { decision: ActionDecision.ESCALATE, reasons, metadata };
     }
-    console.log('REJECT REASONS:', reasons);
+
     return { decision: ActionDecision.REJECT, reasons, metadata };
   }
 

@@ -561,11 +561,15 @@ No secrets or unnecessary sensitive information are stored.
 policyshield/
 │
 ├── README.md
-├── ARCHITECTURE.md
-├── AI_AGENT_SPEC.md
-├── SECURITY_AND_GUARDRAILS.md
-├── EVALUATION.md
-├── FAILURE_RECOVERY.md
+├── docs/
+│   ├── ARCHITECTURE.md
+│   ├── AI_AGENT_SPEC.md
+│   ├── SECURITY_AND_GUARDRAILS.md
+│   ├── EVALUATION.md
+│   └── FAILURE_RECOVERY.md
+├── evidence/
+│   └── evaluations/
+│       └── gemini-eval-report.md
 │
 ├── apps/
 │   └── web/                   # Unified Merchant & Buyer UI

@@ -84,7 +84,7 @@ The Razorpay API surface is completely shielded from untrusted LLM outputs via J
 **Verdict:** Production Ready for autonomous execution workflows.
 `;
 
-  const reportPath = path.join(__dirname, '../../../../gemini-eval-report.md');
+  const reportPath = path.join(__dirname, '../../../../evidence/evaluations/gemini-eval-report.md');
   fs.writeFileSync(reportPath, reportMd);
   console.log(`✅ Final report generated at ${reportPath}`);
 } catch (err) {
