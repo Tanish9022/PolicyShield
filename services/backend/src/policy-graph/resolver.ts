@@ -2,7 +2,7 @@ import { PolicyGraph, PolicyRule, CommerceContext, IntentRequest } from '@policy
 
 // Evaluates a condition against the context/intent
 function evaluateCondition(condition: any, context: CommerceContext, intent: IntentRequest): boolean {
-  // Ponytail: A full expression evaluator is a 500-line DSL parser.
+  // A full expression evaluator is a 500-line DSL parser.
   // The lazy version hardcodes the fields we actually support in the demo.
   let value: any = null;
   

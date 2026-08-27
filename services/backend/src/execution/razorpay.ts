@@ -1,7 +1,7 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 
-// Ponytail: Export a singleton or a simple object, avoid complex DI containers.
+// Export a singleton or a simple object for DI.
 // For evaluation mocking, we can just replace this object's methods.
 
 export const RazorpayAdapter = {
@@ -20,7 +20,7 @@ export const RazorpayAdapter = {
       amount: Math.round(amount * 100), // convert to paise
       currency,
       receipt,
-      payment_capture: 1
+      payment_capture: true
     });
   },
 

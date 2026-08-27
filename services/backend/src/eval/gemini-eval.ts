@@ -30,9 +30,9 @@ storePolicies({
   source_text: 'Maximum discount allowed is 5%. Orders above 50000 require approval. Keep 3 units in reserve.',
   compiled_at: new Date().toISOString(),
   rules: [
-    { policy_id: uuidv4(), rule_type: 'MAX_DISCOUNT', description: 'Maximum discount is 5%', conditions: [], parameters: { max_discount_percent: 5 }, priority: 1 },
-    { policy_id: uuidv4(), rule_type: 'INVENTORY_RESERVE', description: 'Keep 3 units reserve', conditions: [], parameters: { min_reserve: 3 }, priority: 1 },
-    { policy_id: uuidv4(), rule_type: 'APPROVAL_THRESHOLD', description: 'Approval > 50000', conditions: [], parameters: { threshold_amount: 50000 }, priority: 1 }
+    { policy_id: uuidv4() as any, rule_type: 'MAX_DISCOUNT' as any, description: 'Maximum discount is 5%', conditions: [], parameters: { max_discount_percent: 5 }, priority: 1 },
+    { policy_id: uuidv4() as any, rule_type: 'INVENTORY_RESERVE' as any, description: 'Keep 3 units reserve', conditions: [], parameters: { min_reserve: 3 }, priority: 1 },
+    { policy_id: uuidv4() as any, rule_type: 'APPROVAL_THRESHOLD' as any, description: 'Approval > 50000', conditions: [], parameters: { threshold_amount: 50000 }, priority: 1 }
   ]
 });
 

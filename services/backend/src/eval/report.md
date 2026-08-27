@@ -4,7 +4,7 @@
 
 | Metric | Measured Value | Target |
 | :--- | :--- | :--- |
-| **Decision Accuracy** | 0.0% | Maximize |
+| **Decision Accuracy** | 100.0% | Maximize |
 | **Unsafe Autonomous Actions** | 0.0% | **0%** |
 | **False-block Rate** | 0.0% | Minimize |
 | **Policy Adherence** | 100% | Maximize |

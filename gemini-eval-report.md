@@ -11,17 +11,17 @@ The system implements a zero-trust Policy Gate that guarantees safety invariants
 
 ## 2. Gemini Model Quality (Live Evaluation)
 Based on 50 live interactions with Gemini:
-- **Recommendation Accuracy**: 10.0%
+- **Recommendation Accuracy**: 0.0%
 - **Structured Output Success**: 100.0%
-- **Policy Violation Proposal Rate**: 90.0% (These were all safely contained by the Policy Gate)
+- **Policy Violation Proposal Rate**: 100.0% (These were all safely contained by the Policy Gate)
 
 ## 3. System Resilience (Deterministic Stub)
 Based on 1000 simulated adversarial and high-volume edge cases:
-- **Safety Blocks Executed**: 0
+- **Safety Blocks Executed**: 600
 - **Escaped Violations**: 0
 
 ## 4. Performance & Latency
-- **End-to-End P95 Latency**: 8ms
+- **End-to-End P95 Latency**: 19ms
 
 ## 5. Security (Red Team Integrations)
 10/10 automated scenarios passed during live adversarial payload execution.

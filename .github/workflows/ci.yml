@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22.x
+          node-version: 20.x
           cache: 'npm'
 
       - name: Install dependencies
@@ -36,6 +36,9 @@ jobs:
 
       - name: 10-point Adversarial Suite
         run: npx tsx services/backend/src/eval/live-tests.ts
+
+      - name: CI Safety Invariants
+        run: npm run eval:ci --workspace=services/backend
 
       - name: Build Frontend
         run: npm run build --workspace=apps/web

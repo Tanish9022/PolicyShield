@@ -33,16 +33,19 @@ let injectTimeout = false;
 
 // Mock the real gateway, but support fault injection
 const originalCreateOrder = razorpay.RazorpayAdapter.createOrder;
+const mockOrders: Record<string, any> = {};
+
 (razorpay.RazorpayAdapter as any).createOrder = async (amount: number, currency: string, receipt: string) => {
   if (injectTimeout) {
     throw new Error('Network timeout reaching Razorpay API');
   }
-  return { id: `order_${uuidv4()}` };
+  const orderId = `order_${uuidv4()}`;
+  mockOrders[receipt] = { status: 'created', id: orderId, receipt };
+  return { id: orderId };
 };
 
 (razorpay.RazorpayAdapter as any).fetchOrderByReceipt = async (receiptId: string) => {
-  if (receiptId.includes('missing')) return null;
-  return { status: 'created', id: 'order_test' };
+  return mockOrders[receiptId] || null;
 };
 
 async function runLiveTests() {
@@ -114,8 +117,10 @@ async function runLiveTests() {
     buyer_input: 'I want to buy the MacBook Pro at full price',
     received_at: new Date().toISOString()
   };
-  const { action_id: t6ActionId } = await processIntent(t6Intent);
+  const result6 = await processIntent(t6Intent);
+  const t6ActionId = result6.action.action_id;
   
+  db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(t6ActionId);
   injectTimeout = true;
   try {
     await executeAction(t6ActionId);
@@ -133,7 +138,7 @@ async function runLiveTests() {
   const t6bActionId = uuidv4();
   db.prepare(`INSERT INTO intents (intent_id, request_id, merchant_id, buyer_input) VALUES (?, ?, ?, ?)`).run(t6bIntentId, uuidv4(), merchantId, '...');
   db.prepare(`INSERT INTO actions (action_id, intent_id, merchant_id, idempotency_key, action_type, state, decision, policy_version, parameters_json)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(t6bActionId, t6bIntentId, merchantId, `rcpt_missing_${t6bActionId}`, 'CREATE_ORDER', 'EXECUTION_UNKNOWN', 'APPROVE', 'v1', '{}');
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(t6bActionId, t6bIntentId, merchantId, `idemp_${t6bIntentId}`, 'CREATE_ORDER', 'EXECUTION_UNKNOWN', 'APPROVE', 'v1', '{}');
   
   const recResB = await resolveUnknownExecution(t6bIntentId);
   console.log(`  Branch B (Order Absent) -> ${recResB.status === 'VERIFIED_FAILURE' ? '✅' : '❌'} ${recResB.status}\n`);
@@ -158,7 +163,9 @@ async function runLiveTests() {
     request_id: uuidv4() as any, intent_id: uuidv4() as any, merchant_id: merchantId as any,
     buyer_input: 'I want to buy the MacBook Pro at full price', received_at: new Date().toISOString()
   };
-  const { action_id: t7ActionId } = await processIntent(t7Intent);
+  const result7 = await processIntent(t7Intent);
+  const t7ActionId = result7.action.action_id;
+  db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(t7ActionId);
   db.prepare('UPDATE inventory SET stock_level = ? WHERE merchant_id = ?').run(0, merchantId); // Mutate inventory
   try {
     await executeAction(t7ActionId);
@@ -175,7 +182,9 @@ async function runLiveTests() {
     request_id: uuidv4() as any, intent_id: uuidv4() as any, merchant_id: merchantId as any,
     buyer_input: 'I want to buy the MacBook Pro at full price', received_at: new Date().toISOString()
   };
-  const { action_id: t8ActionId } = await processIntent(t8Intent);
+  const result8 = await processIntent(t8Intent);
+  const t8ActionId = result8.action.action_id;
+  db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(t8ActionId);
   db.prepare('UPDATE products SET price = ? WHERE product_id = ?').run(200000, 'prod_macbook'); // Mutate price
   try {
     await executeAction(t8ActionId);
@@ -205,8 +214,8 @@ async function runLiveTests() {
     body: rawBody
   });
 
-  const res1 = await whResponse1.json();
-  const res2 = await whResponse2.json();
+  const res1 = (await whResponse1.json()) as any;
+  const res2 = (await whResponse2.json()) as any;
 
   if ((res1.status === 'ok' && res2.status === 'ignored_duplicate') || (res2.status === 'ok' && res1.status === 'ignored_duplicate')) {
     console.log(`  Result: ✅ Deduplicated webhook safely\n`);
@@ -221,7 +230,9 @@ async function runLiveTests() {
     request_id: uuidv4() as any, intent_id: uuidv4() as any, merchant_id: merchantId as any,
     buyer_input: 'I want to buy the MacBook Pro at full price', received_at: new Date().toISOString()
   };
-  const { action_id: t10ActionId } = await processIntent(t10Intent);
+  const result10 = await processIntent(t10Intent);
+  const t10ActionId = result10.action.action_id;
+  db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(t10ActionId);
   const currentVersion = db.prepare('SELECT version FROM policy_versions WHERE merchant_id = ? ORDER BY compiled_at DESC LIMIT 1').get(merchantId) as any;
   if (currentVersion) {
     db.prepare('UPDATE policy_versions SET version = ? WHERE merchant_id = ? AND version = ?').run(uuidv4(), merchantId, currentVersion.version); // Mutate policy version
@@ -277,6 +288,33 @@ async function runLiveTests() {
     console.log(`  Result: ✅ Approved correctly. Razorpay NOT invoked. Final discount 15%. State is COMMERCE_STATE_UPDATED.`);
   } else {
     console.log(`  Result: ❌ Failed precedence. Decision: ${result12.gate_decision}, State: ${result12.action.state}, Razorpay: ${razorpay_invoked12}, Meta: ${JSON.stringify(metadata12)}`);
+  }
+
+  // Test 13: Concurrent execution
+  console.log('\nTest 13: Concurrent Execution (TOCTOU)');
+  const t13Intent: IntentRequest = {
+    request_id: uuidv4() as any, intent_id: uuidv4() as any, merchant_id: merchantId as any,
+    buyer_input: 'I want to buy the MacBook Pro at full price', received_at: new Date().toISOString()
+  };
+  const result13 = await processIntent(t13Intent);
+  const t13ActionId = result13.action.action_id;
+  
+  // Set back to VALIDATED explicitly
+  db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(t13ActionId);
+  
+  // Try concurrent executions
+  const p1 = executeAction(t13ActionId).catch(e => e.message);
+  const p2 = executeAction(t13ActionId).catch(e => e.message);
+  
+  const results13 = await Promise.all([p1, p2]);
+  
+  const successCount = results13.filter(r => r.status === 'SUCCESS').length;
+  const errorCount = results13.filter(r => typeof r === 'string' && r.includes('Concurrent execution detected')).length;
+  
+  if (successCount === 1 && errorCount === 1) {
+    console.log(`  Result: ✅ Concurrent execution prevented. 1 Success, 1 Blocked.`);
+  } else {
+    console.log(`  Result: ❌ Failed concurrency. Successes: ${successCount}, Errors: ${errorCount}, Results: ${JSON.stringify(results13)}`);
   }
 
   console.log('==========================================');

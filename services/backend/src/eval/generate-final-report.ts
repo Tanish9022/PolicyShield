@@ -21,7 +21,7 @@ try {
     const suiteEvents = metricEvents.filter(e => traceIds.has(e.trace_id));
     
     const total = suiteTraces.length;
-    if (total === 0) return { total: 0 };
+    if (total === 0) return { total: 0, p95LatencyMs: 0, gateBlocks: 0, parseSuccessRate: '0.0', modelErrorsContained: 0, unsafeActionsExecuted: 0 };
 
     const durations = suiteTraces.map(t => t.total_duration_ms).sort((a, b) => a - b);
     const p95Latency = durations[Math.floor(durations.length * 0.95)] || 0;

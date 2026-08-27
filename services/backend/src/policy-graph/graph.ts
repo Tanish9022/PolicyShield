@@ -31,10 +31,10 @@ export function getPolicies(merchantId: string, version?: string): PolicyGraph |
   if (!row) return null;
   
   return {
-    merchant_id: row.merchant_id,
-    version: row.version as any,
-    rules: JSON.parse(row.rules_json) as any,
-    compiled_at: row.compiled_at,
-    source_text: row.source_text
+    merchant_id: (row as any).merchant_id,
+    version: (row as any).version,
+    rules: JSON.parse((row as any).rules_json),
+    compiled_at: (row as any).compiled_at,
+    source_text: (row as any).source_text
   };
 }

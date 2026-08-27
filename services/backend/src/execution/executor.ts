@@ -4,7 +4,7 @@ import { RazorpayAdapter } from './razorpay';
 import { isValidTransition } from '@policyshield/shared';
 import { TelemetryTracer } from '../gateway/telemetry';
 
-// Ponytail: Executor runs synchronously after the Gate if APPROVE.
+
 
 export async function executeAction(actionId: string, tracer?: TelemetryTracer): Promise<any> {
   const db = getDb();
@@ -61,13 +61,17 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
 
   // Idempotency
   const startIdempotency = performance.now();
-  // We use `rcpt_${actionId}` uniquely. If it fails due to UNIQUE constraint in DB or Razorpay, we catch it.
+  // We use `action.idempotency_key` uniquely. If it fails due to UNIQUE constraint in DB or Razorpay, we catch it.
   if (tracer) tracer.recordStage('IDEMPOTENCY', startIdempotency, 'SUCCESS');
 
-  // 2. Transition to EXECUTING
-  db.prepare('UPDATE actions SET state = ?, updated_at = ? WHERE action_id = ?').run(
-    'EXECUTING', new Date().toISOString(), actionId
-  );
+  // 2. Transition to EXECUTING atomically to prevent concurrent executions
+  const updateResult = db.prepare(
+    "UPDATE actions SET state = 'EXECUTING', updated_at = ? WHERE action_id = ? AND state IN ('VALIDATED', 'RETRY_ELIGIBLE')"
+  ).run(new Date().toISOString(), actionId);
+  
+  if (updateResult.changes === 0) {
+    throw new Error(`Concurrent execution detected or invalid state for action ${actionId}`);
+  }
 
   try {
     let result: any = null;
@@ -78,7 +82,7 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
       const order = (await RazorpayAdapter.createOrder(
         parameters.amount || 1000, 
         parameters.currency || 'INR', 
-        `rcpt_${actionId}`
+        action.idempotency_key
       )) as any;
       
       if (tracer) tracer.recordStage('RAZORPAY', startRazorpay, 'SUCCESS');
@@ -106,7 +110,7 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
 
   } catch (err: any) {
     // 4. Transport/Timeout Failure -> EXECUTION_UNKNOWN
-    // Ponytail: If we can't be sure it failed, it's UNKNOWN.
+    // If we can't be sure it failed, it's UNKNOWN.
     console.error(`[EXECUTION_UNKNOWN] action_id=${actionId} error=${err.message}`);
     
     db.prepare('UPDATE actions SET state = ?, updated_at = ? WHERE action_id = ?').run(

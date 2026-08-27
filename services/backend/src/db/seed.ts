@@ -9,16 +9,16 @@ const graph: PolicyGraph = {
   compiled_at: new Date().toISOString(),
   rules: [
     {
-      policy_id: uuidv4(),
-      rule_type: 'MAX_DISCOUNT',
+      policy_id: 'pol_1' as any,
+      rule_type: 'MAX_DISCOUNT' as any,
       description: 'Maximum discount allowed is 15%',
       conditions: [],
       parameters: { max_discount_percent: 15 },
       priority: 1
     },
     {
-      policy_id: uuidv4(),
-      rule_type: 'APPROVAL_THRESHOLD',
+      policy_id: 'pol_2' as any,
+      rule_type: 'APPROVAL_THRESHOLD' as any,
       description: 'Orders above 50000 require approval.',
       conditions: [],
       parameters: { threshold_amount: 50000 },

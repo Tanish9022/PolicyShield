@@ -1,7 +1,6 @@
 import { AgentOutput, PolicyRule, ActionDecision } from '@policyshield/shared';
 
 // Deterministic Gate
-// Ponytail: Simplest possible validation logic. A switch statement on rule_type.
 
 export function validateRecommendation(
   recommendation: AgentOutput,
@@ -38,11 +37,6 @@ export function validateRecommendation(
            
            const policy_max = (rule.parameters?.max_discount_percent as number) ?? 100;
            
-           // If there are no promotions, promotion_max is 0. But maybe we only bound by policy if no promo?
-           // The user says "Merchant policy > promotion availability". 
-           // If promotion_max = 0, maybe NO discount is allowed? Wait, the user didn't specify. 
-           // If we assume a buyer can just ask for a discount, but there's no promo, it should probably be 0.
-           // Actually, let's treat promotion_max=0 as 0 if we strictly require promos, but for now we cap at promo if it exists, otherwise policy.
            const max_allowed = promotion_max > 0 ? Math.min(policy_max, promotion_max) : policy_max;
            
            metadata.requested_discount = requested;

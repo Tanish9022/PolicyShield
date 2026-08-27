@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 
-// Ponytail: The simplest chaos injector. 
+// The simplest chaos injector. 
 // Pass 'x-chaos-drop' header with a probability (0-1) to drop the response.
 
 export function chaosMiddleware(req: Request, res: Response, next: NextFunction): void {

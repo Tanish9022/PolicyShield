@@ -3,7 +3,7 @@ import { PRODUCTS, INVENTORY, PROMOTIONS, SHIPPING, CUSTOMERS } from '../context
 
 const router = Router();
 
-// Ponytail: No DB needed for merchant read-only data, just serve the JSON arrays.
+// No DB needed for merchant read-only data, just serve the JSON arrays.
 
 router.get('/products', (_req, res) => res.json(PRODUCTS));
 router.get('/inventory', (_req, res) => res.json(INVENTORY));
