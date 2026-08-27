@@ -11,6 +11,10 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "@policyshield/*": ["packages/*/src"]
+    }
   }
 }
