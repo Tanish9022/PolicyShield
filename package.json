@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "npm run dev --workspace=services/backend",
     "dev:web": "npm run dev --workspace=apps/web",
-    "build": "npm run build --workspace=packages/shared && npm run build --workspace=services/backend",
+    "build": "npm run build --workspaces --if-present",
     "clean": "rimraf packages/*/dist services/*/dist apps/*/dist",
     "test:all": "npm run test:all --workspace=services/backend",
     "db:migrate": "npm run db:migrate --workspace=services/backend",
