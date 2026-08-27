@@ -25,8 +25,8 @@ export function resolveApplicablePolicies(
 ): PolicyRule[] {
   // Filter rules whose conditions are met. 
   // If a rule has no conditions, it applies globally.
-  return graph.rules.filter(rule => {
+  return graph.rules.filter((rule: PolicyRule) => {
     if (!rule.conditions || rule.conditions.length === 0) return true;
-    return rule.conditions.every(cond => evaluateCondition(cond, context, intent));
+    return rule.conditions.every((cond: any) => evaluateCondition(cond, context, intent));
   });
 }
