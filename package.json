@@ -1,0 +1,28 @@
+{
+  "name": "policyshield",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI Policy Compiler + Runtime Guard for Agentic Commerce",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=services/backend",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspace=packages/shared && npm run build --workspace=services/backend",
+    "clean": "rimraf packages/*/dist services/*/dist apps/*/dist",
+    "test:all": "npm run test:all --workspace=services/backend",
+    "db:migrate": "npm run db:migrate --workspace=services/backend",
+    "db:reset": "npm run db:reset --workspace=services/backend",
+    "eval:gemini": "npm run eval:gemini --workspace=services/backend",
+    "eval:benchmark": "npm run eval:benchmark --workspace=services/backend",
+    "eval:redteam": "npm run eval:redteam --workspace=services/backend",
+    "eval:ci": "npm run eval:ci --workspace=services/backend",
+    "eval:report": "npm run eval:report --workspace=services/backend"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -227,15 +227,15 @@ PolicyShield will **never** automatically:
 ## Chaos testing
 
 The MVP should have toggles for:
-- [ ] Razorpay API timeout
-- [ ] Inventory changes after validation
-- [ ] Stale price
-- [ ] Duplicate request
-- [ ] Delayed webhook
-- [ ] Duplicate webhook
-- [ ] Policy conflict
-- [ ] Policy update during session
-- [ ] Context service failure
+- [x] Razorpay API timeout
+- [x] Inventory changes after validation
+- [x] Stale price
+- [x] Duplicate request
+- [x] Delayed webhook
+- [x] Duplicate webhook
+- [x] Policy conflict
+- [x] Policy update during session
+- [x] Context service failure
 
 Each fault should produce:
 - deterministic state transition

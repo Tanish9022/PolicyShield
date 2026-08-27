@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared packages
+        run: npm run build --workspace=packages/shared
+
+      - name: Typecheck Backend
+        run: npm run build --workspace=services/backend
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Run Unit Tests
+        run: npx vitest run --passWithNoTests
+
+      - name: 10-point Adversarial Suite
+        run: npx tsx services/backend/src/eval/live-tests.ts
+
+      - name: Build Frontend
+        run: npm run build --workspace=apps/web

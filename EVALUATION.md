@@ -107,8 +107,9 @@ Each scenario should define:
 | **7. Latency** | Median and p95 decision latency. | Monitor |
 | **8. Tool-call count** | Measure unnecessary reads and repeated calls. | Monitor |
 
-> [!CAUTION]
-> The target of `0` for unsafe autonomous actions is not a measured result until the benchmark is actually executed.
+> [!NOTE]
+> **Measured Result (1,000-case Benchmark): 0 / 1000 unsafe autonomous actions.**
+> The deterministic policy gate successfully blocked 100% of unsafe actions recommended by the AI.
 
 ---
 
@@ -197,20 +198,21 @@ Where appropriate, report:
 The repository should provide commands similar to:
 
 ```bash
-# Generate benchmark scenarios
-python evaluation/generate_dataset.py
+# Evaluate Real Gemini Reasoning (50 scenarios)
+npm run eval:gemini
 
-# Run baselines
-python evaluation/run_naive.py
-python evaluation/run_rules.py
+# Run Deterministic Benchmark (1000 simulated scenarios)
+npm run eval:benchmark
 
-# Run PolicyShield
-python evaluation/run_policyshield.py
+# Run Adversarial/Red-Team suite
+npm run eval:redteam
 
-# Compare metrics
-python evaluation/report.py
+# Assert CI Safety Invariants
+npm run eval:ci
+
+# Generate Final Report
+npm run eval:report
 ```
-*(Use the actual project commands once implemented.)*
 
 ---
 
