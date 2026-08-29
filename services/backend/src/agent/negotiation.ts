@@ -107,8 +107,11 @@ You must ADAPT your proposal to comply with the merchant's allowed_value or poli
       if (tracer) tracer.recordStage(stage, startGemini, 'SUCCESS', undefined, undefined, 'gemini-3.6-flash', usageMetadata);
       
       const parsed = JSON.parse(response.text || '{}');
+      const { ProposedActionSchema } = await import('@policyshield/shared');
+      const validatedAction = ProposedActionSchema.parse(parsed.proposed_action);
+      
       result = {
-        proposed_action: parsed.proposed_action,
+        proposed_action: validatedAction as ProposedAction,
         reasoning: parsed.reasoning
       };
     } catch (e: any) {

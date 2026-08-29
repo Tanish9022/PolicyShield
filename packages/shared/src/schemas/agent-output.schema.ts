@@ -12,14 +12,15 @@ export const AgentDecisionSchema = z.enum([
 ]);
 
 export const ProposedActionSchema = z.object({
-  type: z.string(),
+  type: z.enum(['CREATE_ORDER', 'APPLY_DISCOUNT']),
   /** Action-specific parameters */
-  product_id: z.string().optional(),
-  discount_percent: z.number().optional(),
-  requested_discount_percent: z.number().optional(),
-  quantity: z.number().optional(),
+  product_id: z.string(),
+  discount_percent: z.number().min(0).max(100).optional(),
+  requested_discount_percent: z.number().min(0).max(100).optional(),
+  quantity: z.number().min(1).optional(),
   shipping_option_id: z.string().optional(),
-  amount: z.number().optional(),
+  amount: z.number().min(0).optional(),
+  base_price: z.number().optional(),
   currency: z.string().optional(),
 });
 
