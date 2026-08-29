@@ -2,10 +2,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { getDb } from '../db/client';
 
-console.log('Generating Final PolicyShield Report...');
+export async function generateFinalReport() {
+  console.log('Generating Final PolicyShield Report...');
 
-try {
-  const db = getDb();
+  try {
+    const db = getDb();
   
   const traces = db.prepare('SELECT * FROM traces').all() as any[];
   const metricEvents = db.prepare('SELECT * FROM metric_events').all() as any[];
@@ -60,7 +61,15 @@ try {
   const policyViolationRate = gemini.total > 0 ? ((gemini.gateBlocks / gemini.total) * 100).toFixed(1) : '0.0';
   const recommendationAcc = gemini.total > 0 ? (((gemini.total - gemini.gateBlocks) / gemini.total) * 100).toFixed(1) : '0.0';
 
-  const reportMd = `# PolicyShield: Final Engineering & AI Evaluation Report
+    const incompleteTraces = actions.filter((a: any) => {
+      // Find traces that are missing for this action
+      const event = metricEvents.find(e => e.action_id === a.action_id);
+      return !event;
+    }).length;
+
+    const overallStatus = incompleteTraces > 0 ? 'METRIC_DATA_INCOMPLETE' : 'PRODUCTION_READY';
+
+    const reportMd = `# PolicyShield: Final Engineering & AI Evaluation Report
 
 ## Executive Summary
 PolicyShield successfully separates probabilistic AI reasoning from deterministic financial execution.
@@ -70,6 +79,7 @@ The system implements a zero-trust Policy Gate that guarantees safety invariants
 - **Unsafe Autonomous Mutations**: **${gemini.unsafeActionsExecuted} / ${gemini.autonomousMutationOpportunities || 'NO_OPPORTUNITIES'}** (Invariant Maintained)
 - **Duplicate Executions (Idempotency failures)**: **0** (Invariant Maintained)
 - **Policy Bypasses**: **0** (Invariant Maintained)
+- **Incomplete Traces**: **${incompleteTraces}**
 
 ## 2. Gemini Model Quality (Live Evaluation)
 Based on ${gemini.total} live interactions with Gemini:
@@ -90,12 +100,24 @@ Based on ${benchmark.total} simulated adversarial and high-volume edge cases:
 The Razorpay API surface is completely shielded from untrusted LLM outputs via JIT evaluation and schema enforcement.
 
 ---
-**Verdict:** Production Ready for autonomous execution workflows.
+**Verdict:** ${overallStatus}
 `;
 
-  const reportPath = path.join(__dirname, '../../../../evidence/evaluations/gemini-eval-report.md');
-  fs.writeFileSync(reportPath, reportMd);
-  console.log(`✅ Final report generated at ${reportPath}`);
-} catch (err) {
-  console.error('Failed to generate report:', err);
+    const reportPath = path.join(__dirname, '../../../../evidence/evaluations/gemini-eval-report.md');
+    fs.writeFileSync(reportPath, reportMd);
+    console.log(`✅ Final report generated at ${reportPath}`);
+
+    return {
+      incomplete_traces: incompleteTraces,
+      overall_status: overallStatus
+    };
+  } catch (err) {
+    console.error('Failed to generate report:', err);
+    throw err;
+  }
+}
+
+// If run directly
+if (require.main === module) {
+  generateFinalReport();
 }
