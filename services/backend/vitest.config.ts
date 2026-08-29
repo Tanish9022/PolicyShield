@@ -5,6 +5,7 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     setupFiles: ['./src/eval/vitest.setup.ts'],
+    exclude: ['**/node_modules/**', '**/dist/**'],
     pool: 'forks', // Use forks for better isolated execution or better-sqlite3 compatibility
     poolOptions: {
       forks: {
