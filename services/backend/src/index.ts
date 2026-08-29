@@ -94,11 +94,30 @@ app.use(errorHandler);
 
 // ─── Start Server ───────────────────────────────────────────────
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   // Initialize the database on startup
-  getDb();
+  const db = getDb();
   console.log(`[PolicyShield] Backend running on http://localhost:${PORT}`);
   console.log(`[PolicyShield] Health check: http://localhost:${PORT}/health`);
+
+  // Run Startup Recovery
+  console.log(`[PolicyShield] Running startup recovery...`);
+  try {
+    const { resolveUnknownExecution } = await import('./gateway/orchestrator');
+    const unknownActions = db.prepare(`SELECT intent_id FROM actions WHERE state = 'EXECUTION_UNKNOWN'`).all() as { intent_id: string }[];
+    
+    if (unknownActions.length > 0) {
+      console.log(`[PolicyShield] Found ${unknownActions.length} actions in EXECUTION_UNKNOWN state. Attempting recovery...`);
+      for (const action of unknownActions) {
+        await resolveUnknownExecution(action.intent_id);
+      }
+      console.log(`[PolicyShield] Startup recovery complete.`);
+    } else {
+      console.log(`[PolicyShield] No pending recoveries found.`);
+    }
+  } catch (e: any) {
+    console.error(`[PolicyShield] Startup recovery failed:`, e.message);
+  }
 });
 
 // Graceful shutdown
