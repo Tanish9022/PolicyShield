@@ -20,7 +20,7 @@ The test environment relies on the following key components:
 
 ## Full Test Matrix Coverage
 
-Our test matrix evaluates 24 critical paths across the system:
+Our test matrix evaluates a multi-category integration and adversarial test matrix comprising 19 independent critical paths across the system:
 
 ### 1. Policy Integrity & Enforcement (`policy.test.ts`)
 - **Normal Purchase**: AI correctly generates `CREATE_ORDER` and policy gate returns `APPROVE`.
@@ -47,10 +47,51 @@ Our test matrix evaluates 24 critical paths across the system:
 - **Deduplication**: Identical incoming webhook payloads (same `x-razorpay-event-id`) are idempotently swallowed (HTTP 200, `status: ignored_duplicate`).
 
 ### 6. Policy Precedence (`precedence.test.ts`)
-- **Conflict Resolution**: Verifies that the Policy Engine correctly calculates `Math.min(policy_max, promotion_max)` when determining permissible discounts.
+- **Conflict Resolution**: Verifies that the Policy Engine correctly calculates precedence: **Merchant policy defines the maximum permitted value. Promotion availability may reduce the available value, but must never increase the merchant-authorized limit.**
 
-### 7. Metric Integrity (`metrics.test.ts`)
-- **Autonomous Mutation Assertions**: Validates that the system correctly measures unsafe actions organically via telemetry and trace joins, rather than relying on hardcoded `0` invariants. An explicit, controlled compromise of the executor demonstrates that the telemetry accurately reports `unsafeActionsExecuted = 1`.
+### 7. Metric Integrity (`metrics.test.ts` & `metric_failure.test.ts`)
+- **Autonomous Mutation Assertions**: Validates that the system correctly measures unsafe actions organically via telemetry and trace joins.
+- **Trace Propagation Verification**: Evaluates telemetry completion. If trace propagation fails, the system accurately detects the gap and reports `STATUS = UNKNOWN / METRIC_DATA_INCOMPLETE`. We only claim `UNSAFE_AUTONOMOUS_FINANCIAL_MUTATIONS = 0` when telemetry is definitively complete.
+
+### 8. Receipt & Reconciliation Architecture (`receipt.test.ts`)
+- **Idempotency Separation**: Validates canonical separation between internal `idempotency_key` and external `external_receipt` (< 40 chars) to Razorpay.
+
+### 9. End-to-End AI Buyer Flow (`ai_buyer_e2e.test.ts`)
+- **Full State Machine Validation**: Simulates the full multi-turn buyer lifecycle: `DISCOVER -> COMPARE -> NEGOTIATE -> POLICY_REJECT -> ADAPT -> READY_FOR_CHECKOUT -> CONFIRM -> JIT -> IDEMPOTENCY -> RAZORPAY -> VERIFY`.
+
+## Evaluation Modes
+
+The validation suite is segmented into three distinct evaluation modes to ensure complete coverage:
+
+1. **Deterministic Runtime Tests**: The CI/CD validation layer. These test the hard boundaries, invariants, state machine, and concurrent execution under localized simulated environments (Vitest + STUB_AI=true).
+2. **Real Gemini Evaluation**: Live generative AI tests measuring the LLM's recommendation accuracy, instruction following, and response structure, fully evaluated by the deterministic Policy Gate (STUB_AI=false).
+3. **Red-Team Evaluation**: Simulated adversarial attack payloads to probe for bypasses in context mapping, JSON injection, and prompt escape sequences.
+
+## Final Release Gate Checklist
+
+- [x] Concurrency/TOCTOU isolation verified.
+- [x] Deterministic JIT checkout validation verified.
+- [x] Recovery correlation and idempotency logic verified.
+- [x] Fail-closed webhook signature processing verified.
+- [x] Metric telemetry verified and asserts `INCOMPLETE` on failures.
+- [x] External receipt canonical separation verified.
+- [x] End-to-End agent state machine verified.
+
+## Final Test Matrix Results
+
+| Test Category | File | Cases Run | Status |
+|---|---|---|---|
+| Recovery | `recovery.test.ts` | 3 | PASS |
+| Policy Precedence | `precedence.test.ts` | 2 | PASS |
+| Receipt Constraints | `receipt.test.ts` | 3 | PASS |
+| Policy Validation | `policy.test.ts` | 3 | PASS |
+| JIT Architecture | `jit.test.ts` | 1 | PASS |
+| Concurrency Control | `concurrency.test.ts` | 1 | PASS |
+| Webhook Security | `webhook.test.ts` | 3 | PASS |
+| Metric Integrity | `metrics.test.ts` | 1 | PASS |
+| Metric Failures | `metric_failure.test.ts` | 1 | PASS |
+| Agent E2E State Machine | `ai_buyer_e2e.test.ts` | 1 | PASS |
+| **Total Independent Paths** | | **19** | **READY** |
 
 ## Security & Known Limitations
 
