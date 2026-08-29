@@ -6,14 +6,8 @@ import * as path from 'path';
 import { getDb } from '../db/client';
 import { processIntent } from '../gateway/orchestrator';
 
-// Disable STUB_AI
-process.env.STUB_AI = '';
-
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
-  console.log('GEMINI_API_KEY is not set. Falling back to STUB_AI=true for evaluation.');
-  process.env.STUB_AI = 'true';
-}
+// Enforce STUB_AI for fast local evaluation
+process.env.STUB_AI = 'true';
 
 const merchantId = 'merchant_gemini_eval';
 const db = getDb();
