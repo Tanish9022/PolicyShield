@@ -63,7 +63,7 @@ export async function generateFinalReport(writeToDisk: boolean = true) {
 
     const incompleteTraces = actions.filter((a: any) => {
       // Find traces that are missing for this action
-      const event = metricEvents.find(e => e.action_id === a.action_id);
+      const event = metricEvents.find(e => e.intent_id === a.intent_id);
       return !event;
     }).length;
 
