@@ -1,98 +1,196 @@
-import { useState } from 'react';
-import { Play, ArrowRight, ArrowLeft, RefreshCcw } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-
-const SCENES = [
-  { id: 1, title: 'Compile Policy', desc: 'Translating natural language constraints into executable graphs.', path: '/policies' },
-  { id: 2, title: 'AI Buyer Intent', desc: 'Simulating a buyer requesting a massive 20% discount.', path: '/buyer', action: 'Buy laptop with 20% discount' },
-  { id: 3, title: 'Policy Gate Block', desc: 'AI recommends the discount. Deterministic Policy Gate blocks execution.', path: '/decisions' },
-  { id: 4, title: 'Valid Purchase', desc: 'Buyer requests a normal purchase. Policy allows it.', path: '/buyer', action: 'Buy the best laptop' },
-  { id: 5, title: 'Razorpay Test Execution', desc: 'Transaction successfully executed against Razorpay Sandbox.', path: '/decisions' },
-  { id: 6, title: 'Chaos: Inventory Mutation', desc: 'Inject race condition. Set stock to 0 right before next purchase.', path: '/chaos' },
-  { id: 7, title: 'JIT Re-validation Block', desc: 'AI proposes purchase, but JIT guard detects 0 inventory at the last millisecond.', path: '/decisions' },
-  { id: 8, title: 'Chaos: Razorpay Timeout', desc: 'Network failure during execution. System transitions to EXECUTION_UNKNOWN.', path: '/failures' },
-  { id: 9, title: 'Audit Verification', desc: 'Immutable ledger proves what happened and why.', path: '/audit' }
-];
+import { useState, useEffect } from 'react';
+import { Send, CheckCircle, Clock, ShieldAlert, CreditCard } from 'lucide-react';
 
 export default function DemoMode() {
-  const [scene, setScene] = useState(1);
-  const navigate = useNavigate();
+  const [buyerInput, setBuyerInput] = useState('Find me the best laptop under ₹70,000 with maximum discount and delivery tomorrow.');
+  const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [result, setResult] = useState<any>(null);
+  
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutResult, setCheckoutResult] = useState<any>(null);
 
-  const handleRunScene = () => {
-    const current = SCENES[scene - 1];
-    navigate(current.path);
+  const steps = [
+    'Initializing AI Buyer Agent...',
+    'Discovery: Searching catalog & verifying inventory...',
+    'Comparison: Evaluating options...',
+    'Negotiation: Proposing maximum discount...',
+    'Policy Gate: Validating against merchant constraints...',
+    'Adaptation: Adjusting to policy limits...',
+    'Ready for Confirmation'
+  ];
+
+  useEffect(() => {
+    if (loading) {
+      const interval = setInterval(() => {
+        setLoadingStep((s) => Math.min(s + 1, steps.length - 2));
+      }, 3000);
+      return () => clearInterval(interval);
+    } else {
+      setLoadingStep(0);
+    }
+  }, [loading]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setResult(null);
+    setCheckoutResult(null);
+    
+    try {
+      const res = await fetch('http://localhost:3001/api/intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          merchant_id: 'merchant_1',
+          buyer_input: buyerInput,
+          customer_id: 'cust_demo'
+        })
+      });
+      const data = await res.json();
+      setResult(data);
+      setLoadingStep(steps.length - 1);
+    } catch (err) {
+      console.error(err);
+      alert('Error connecting to backend');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleReset = async () => {
-    await fetch('http://localhost:3001/api/chaos/reset', { method: 'POST' });
-    setScene(1);
+  const handleCheckout = async () => {
+    if (!result?.agent_run?.intent_id) return;
+    setCheckoutLoading(true);
+    
+    try {
+      const res = await fetch(`http://localhost:3001/api/intent/${result.agent_run.intent_id}/checkout`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      setCheckoutResult(data);
+    } catch (err) {
+      console.error(err);
+      alert('Error connecting to backend');
+    } finally {
+      setCheckoutLoading(false);
+    }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full max-w-4xl mx-auto text-center space-y-8 animate-in zoom-in-95 duration-500">
+    <div className="flex flex-col items-center max-w-4xl mx-auto h-full space-y-8 py-10 animate-in zoom-in-95 duration-500">
       
-      <div className="space-y-4">
-        <h1 className="text-4xl font-display font-bold text-primary flex items-center justify-center">
-          <Play className="mr-4" size={40} fill="currentColor" />
-          Cinematic Walkthrough
-        </h1>
-        <p className="text-lg text-text-muted max-w-2xl mx-auto leading-relaxed">
-          Follow this guided sequence to demonstrate the core architecture of PolicyShield during the Razorpay 5-minute video.
-        </p>
+      <div className="text-center space-y-4">
+        <h1 className="text-4xl font-display font-bold text-primary">Real AI Buyer Simulation</h1>
+        <p className="text-text-muted">Experience the end-to-end agentic commerce flow with deterministic safety.</p>
       </div>
 
-      <div className="w-full bg-surface/30 border border-border rounded-xl p-8 relative overflow-hidden">
-         <div className="absolute top-0 left-0 h-1 bg-primary transition-all duration-300" style={{ width: `${(scene / SCENES.length) * 100}%`}}></div>
-         
-         <div className="flex justify-between text-xs font-mono text-text-muted mb-8 uppercase tracking-widest">
-           <span>Scene {scene} of {SCENES.length}</span>
-           <span>{SCENES[scene-1].path}</span>
-         </div>
-
-         <h2 className="text-3xl font-display font-medium text-text-main mb-4">
-           {SCENES[scene-1].title}
-         </h2>
-         <p className="text-text-muted text-lg">
-           {SCENES[scene-1].desc}
-         </p>
-
-         {SCENES[scene-1].action && (
-           <div className="mt-6 inline-block bg-background border border-border rounded-lg px-4 py-3 font-mono text-sm text-emerald-400">
-             &gt; {SCENES[scene-1].action}
-           </div>
-         )}
+      <div className="w-full bg-surface/30 border border-border rounded-xl p-6">
+        <form onSubmit={handleSubmit} className="flex gap-4">
+          <input 
+            type="text" 
+            value={buyerInput}
+            onChange={e => setBuyerInput(e.target.value)}
+            className="flex-1 bg-background border border-border rounded-lg px-4 py-3 focus:border-primary focus:outline-none"
+            placeholder="Type your request here..."
+          />
+          <button 
+            type="submit"
+            disabled={loading || checkoutLoading}
+            className="bg-primary text-background px-6 py-3 rounded-lg font-bold flex items-center hover:bg-primary-hover disabled:opacity-50"
+          >
+            <Send size={18} className="mr-2" />
+            Send Intent
+          </button>
+        </form>
       </div>
 
-      <div className="flex items-center space-x-6">
-        <button 
-          onClick={() => setScene(s => Math.max(1, s - 1))}
-          disabled={scene === 1}
-          className="flex items-center text-text-muted hover:text-text-main disabled:opacity-30 transition-colors"
-        >
-          <ArrowLeft size={20} className="mr-2" /> Previous
-        </button>
-        
-        <button 
-          onClick={handleRunScene}
-          className="flex items-center bg-primary text-background hover:bg-primary-hover px-8 py-4 rounded-full font-bold text-lg shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all transform hover:scale-105"
-        >
-          <Play size={20} fill="currentColor" className="mr-2" /> 
-          Go to Scene
-        </button>
+      {loading && (
+        <div className="w-full bg-surface/30 border border-border rounded-xl p-8 text-center space-y-4">
+          <Clock className="mx-auto text-primary animate-pulse" size={40} />
+          <h2 className="text-xl font-medium">{steps[loadingStep]}</h2>
+          <div className="w-full bg-background h-2 rounded-full overflow-hidden">
+            <div 
+              className="bg-primary h-full transition-all duration-500"
+              style={{ width: `${((loadingStep + 1) / steps.length) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+      )}
 
-        <button 
-          onClick={() => setScene(s => Math.min(SCENES.length, s + 1))}
-          disabled={scene === SCENES.length}
-          className="flex items-center text-text-muted hover:text-text-main disabled:opacity-30 transition-colors"
-        >
-          Next <ArrowRight size={20} className="ml-2" />
-        </button>
-      </div>
+      {!loading && result && (
+        <div className="w-full space-y-6">
+          <div className="bg-surface border border-border rounded-xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-display text-emerald-400 flex items-center">
+                <CheckCircle className="mr-2" /> Agent Decision Reached
+              </h2>
+              <span className="px-3 py-1 bg-surface border border-border rounded text-xs font-mono">
+                {result.agent_run.state}
+              </span>
+            </div>
+            
+            {result.action && result.action.evidence_json && (() => {
+               const evidence = JSON.parse(result.action.evidence_json);
+               const rec = evidence.recommendation.proposed_action;
+               return (
+                 <div className="space-y-4">
+                   <div className="grid grid-cols-2 gap-4">
+                     <div className="bg-background border border-border p-4 rounded-lg">
+                       <h3 className="text-sm text-text-muted mb-1">Selected Product</h3>
+                       <p className="font-mono text-primary text-lg">{rec.product_id}</p>
+                     </div>
+                     <div className="bg-background border border-border p-4 rounded-lg">
+                       <h3 className="text-sm text-text-muted mb-1">Proposed Action</h3>
+                       <p className="font-mono text-primary text-lg">{rec.type}</p>
+                       {rec.discount_percent && (
+                         <p className="text-sm text-rose-400 mt-1">Discount: {rec.discount_percent}% (Adapted)</p>
+                       )}
+                     </div>
+                   </div>
+                   
+                   <div className="bg-background border border-border p-4 rounded-lg">
+                     <h3 className="text-sm text-text-muted mb-2 flex items-center">
+                       <ShieldAlert size={14} className="mr-2 text-primary" /> 
+                       Agent Reasoning
+                     </h3>
+                     <p className="text-sm text-text-main italic">"{evidence.recommendation.explanation}"</p>
+                   </div>
+                 </div>
+               );
+            })()}
+          </div>
+          
+          {result.agent_run.state === 'READY_FOR_CHECKOUT' && !checkoutResult && (
+            <div className="flex justify-center">
+              <button
+                onClick={handleCheckout}
+                disabled={checkoutLoading}
+                className="bg-emerald-500 text-background px-12 py-4 rounded-full font-bold text-lg flex items-center hover:bg-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all transform hover:scale-105 disabled:opacity-50"
+              >
+                {checkoutLoading ? <Clock className="animate-spin mr-2" /> : <CreditCard className="mr-2" />}
+                CONFIRM CHECKOUT
+              </button>
+            </div>
+          )}
 
-      <button onClick={handleReset} className="text-text-muted hover:text-rose-400 text-sm flex items-center mt-12 transition-colors">
-        <RefreshCcw size={14} className="mr-2" /> Reset Demo State
-      </button>
-
+          {checkoutResult && (
+             <div className="bg-surface border border-emerald-500/30 rounded-xl p-8 text-center space-y-4 animate-in slide-in-from-bottom-4">
+               <div className="mx-auto w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                 <CheckCircle className="text-emerald-500" size={32} />
+               </div>
+               <h2 className="text-2xl font-bold text-emerald-400">Order Successful!</h2>
+               <p className="text-text-muted">The transaction was authorized and logged immutably.</p>
+               
+               <div className="inline-block bg-background border border-border p-4 rounded-lg mt-4 text-left">
+                 <p className="text-sm text-text-muted">Final Action State: <span className="text-emerald-400 font-mono">{checkoutResult.state}</span></p>
+                 {checkoutResult.razorpay_order_id && (
+                   <p className="text-sm text-text-muted mt-2">Razorpay Order ID: <span className="text-primary font-mono">{checkoutResult.razorpay_order_id}</span></p>
+                 )}
+               </div>
+             </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

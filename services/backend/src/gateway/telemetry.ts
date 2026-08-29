@@ -54,4 +54,6 @@ export class TelemetryTracer {
       WHERE trace_id = ?
     `).run(totalDuration, status, errorType || null, this.traceId);
   }
+
+  public get traceIdVal() { return this.traceId; }
 }

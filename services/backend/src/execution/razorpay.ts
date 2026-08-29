@@ -7,6 +7,10 @@ import crypto from 'crypto';
 export const RazorpayAdapter = {
   
   createOrder: async (amount: number, currency: string, receipt: string) => {
+    if (process.env.STUB_AI || process.env.STUB_RAZORPAY) {
+      return { id: 'order_stub_' + Math.random().toString(36).substring(7), amount, currency, receipt };
+    }
+
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
       throw new Error('Razorpay credentials not configured');
     }
@@ -43,6 +47,11 @@ export const RazorpayAdapter = {
   },
 
   fetchOrderByReceipt: async (receiptId: string): Promise<any | null> => {
+    if (process.env.STUB_AI || process.env.STUB_RAZORPAY) {
+      if (receiptId.includes('fail')) return null;
+      return { id: 'order_stub_recovered', receipt: receiptId, status: 'created' };
+    }
+
     try {
       const rzp = new Razorpay({
         key_id: process.env.RAZORPAY_KEY_ID!,

@@ -7,6 +7,7 @@ export * from './types/policy';
 export * from './types/action';
 export * from './types/context';
 export * from './types/audit';
+export * from './types/agent';
 
 // Schemas
 export * from './schemas/agent-output.schema';

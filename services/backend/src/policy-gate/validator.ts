@@ -12,9 +12,11 @@ export function validateRecommendation(
   const action = recommendation.proposed_action as any;
 
   // Stale price check if product_id is provided
-  if ((action.type === 'CREATE_ORDER' || action.type === 'EXECUTE_PAYMENT') && context && context.prices && action.product_id) {
+  if ((action.type === 'CREATE_ORDER' || action.type === 'EXECUTE_PAYMENT' || action.type === 'APPLY_DISCOUNT') && context && context.prices && action.product_id) {
     const currentPrice = context.prices[action.product_id];
-    if (action.amount && currentPrice && action.amount < currentPrice * (1 - ((action.discount_percent || 0)/100))) {
+    if (action.base_price && currentPrice && action.base_price !== currentPrice) {
+      reasons.push(`Stale price: Base price changed from ${action.base_price} to ${currentPrice}.`);
+    } else if (action.amount && currentPrice && action.amount < currentPrice * (1 - ((action.discount_percent || 0)/100))) {
       reasons.push(`Stale price or invalid amount: ${action.amount} is less than required price ${currentPrice}.`);
     }
   }
@@ -63,8 +65,12 @@ export function validateRecommendation(
 
       case 'APPROVAL_THRESHOLD':
         const threshold = rule.parameters?.threshold_amount as number | undefined;
-        if (threshold !== undefined && action.amount && action.amount > threshold) {
-          reasons.push(`Amount ${action.amount} exceeds approval threshold ${threshold}.`);
+        let amount = action.amount;
+        if (amount === undefined && action.product_id && context && context.prices) {
+          amount = context.prices[action.product_id] * (1 - ((action.discount_percent || 0) / 100));
+        }
+        if (threshold !== undefined && amount && amount > threshold) {
+          reasons.push(`Amount ${amount} exceeds approval threshold ${threshold}.`);
         }
         break;
         

@@ -77,10 +77,23 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
     let result: any = null;
     const startRazorpay = performance.now();
 
-    if (action.action_type === 'CREATE_ORDER') {
+    if (action.action_type === 'CREATE_ORDER' || action.action_type === 'APPLY_DISCOUNT') {
+      let amountInRupees = 0;
+      
+      if (action.action_type === 'APPLY_DISCOUNT') {
+         const basePrice = context.prices[parameters.product_id];
+         if (!basePrice) throw new Error('Product price not found');
+         const discount = parameters.discount_percent || 0;
+         amountInRupees = basePrice * (1 - discount / 100);
+      } else {
+         amountInRupees = parameters.amount || (context.prices[parameters.product_id] || 1000);
+      }
+      
+      const amountInPaise = Math.round(amountInRupees * 100);
+
       // Create Razorpay order
       const order = (await RazorpayAdapter.createOrder(
-        parameters.amount || 1000, 
+        amountInPaise, 
         parameters.currency || 'INR', 
         action.idempotency_key
       )) as any;
@@ -97,13 +110,6 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
       db.prepare('UPDATE actions SET state = ?, updated_at = ? WHERE action_id = ?').run(
         'VERIFIED_SUCCESS', new Date().toISOString(), actionId
       );
-    } else if (action.action_type === 'APPLY_DISCOUNT') {
-      // APPLY_DISCOUNT is a local commerce state mutation, NOT a financial transaction.
-      // We do NOT hit Razorpay here.
-      db.prepare('UPDATE actions SET state = ?, updated_at = ? WHERE action_id = ?').run(
-        'COMMERCE_STATE_UPDATED', new Date().toISOString(), actionId
-      );
-      result = { discount_applied: parameters.discount_percent };
     }
 
     return { status: 'SUCCESS', result };

@@ -128,3 +128,24 @@ CREATE TABLE IF NOT EXISTS traces (
 CREATE INDEX IF NOT EXISTS idx_metrics_trace ON metric_events(trace_id);
 CREATE INDEX IF NOT EXISTS idx_metrics_intent ON metric_events(intent_id);
 CREATE INDEX IF NOT EXISTS idx_traces_request ON traces(request_id);
+
+-- ─── Agent Runs ─────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS agent_runs (
+  agent_run_id        TEXT    PRIMARY KEY,
+  intent_id           TEXT    NOT NULL REFERENCES intents(intent_id),
+  merchant_id         TEXT    NOT NULL,
+  state               TEXT    NOT NULL DEFAULT 'NEW',
+  current_step        TEXT    NOT NULL DEFAULT 'DISCOVERY',
+  policy_version      TEXT,
+  selected_product_id TEXT,
+  selected_action_id  TEXT,
+  adaptation_count    INTEGER NOT NULL DEFAULT 0,
+  trace_id            TEXT    NOT NULL,
+  trace_events_json   TEXT    NOT NULL DEFAULT '[]',
+  created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+  completed_at        TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_runs_intent ON agent_runs(intent_id);

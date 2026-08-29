@@ -27,6 +27,16 @@ router.post('/', async (req, res, next) => {
   }
 });
 
+router.post('/:intentId/checkout', async (req, res, next) => {
+  try {
+    const { checkoutAction } = await import('../gateway/orchestrator');
+    const result = await checkoutAction(req.params.intentId);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/:intentId/verify', async (req, res, next) => {
   try {
     const { resolveUnknownExecution } = await import('../gateway/orchestrator');
