@@ -71,6 +71,7 @@ async function runLiveTests() {
   ];
 
   let testNum = 1;
+  let hasFailures = false;
   for (const t of tests) {
     console.log(`Test ${testNum}: ${t.name}`);
     const intent: IntentRequest = {
@@ -93,8 +94,10 @@ async function runLiveTests() {
       }
       
       console.log(`  Result: ${passed} Got ${result.gate_decision} (Expected: ${t.expected})\n`);
+      if (passed === '❌') hasFailures = true;
     } catch (e: any) {
       console.log(`  Result: ❌ Error: ${e.message}\n`);
+      hasFailures = true;
     }
     testNum++;
   }
@@ -113,6 +116,7 @@ async function runLiveTests() {
   try {
     await processIntent(duplicateIntent);
     console.log(`  Result: ❌ Second request should have thrown/blocked\n`);
+    hasFailures = true;
   } catch (e: any) {
     console.log(`  Result: ✅ Blocked duplicate request correctly.\n`);
   }
@@ -153,6 +157,7 @@ async function runLiveTests() {
   
   const recResB = await resolveUnknownExecution(t6bIntentId);
   console.log(`  Branch B (Order Absent) -> ${recResB.status === 'VERIFIED_FAILURE' ? '✅' : '❌'} ${recResB.status}\n`);
+  if (recResA.status !== 'VERIFIED_SUCCESS' || recResB.status !== 'VERIFIED_FAILURE') hasFailures = true;
   testNum++;
 
   // Test 7: Inventory mutation
@@ -200,6 +205,7 @@ async function runLiveTests() {
   try {
     await executeAction(t8ActionId);
     console.log(`  Result: ❌ Execution should have been blocked\n`);
+    hasFailures = true;
   } catch (e: any) {
     console.log(`  Result: ✅ Blocked by JIT: ${e.message}\n`);
   }
@@ -232,6 +238,7 @@ async function runLiveTests() {
     console.log(`  Result: ✅ Deduplicated webhook safely\n`);
   } else {
     console.log(`  Result: ❌ Deduplication failed: res1=${JSON.stringify(res1)}, res2=${JSON.stringify(res2)}\n`);
+    hasFailures = true;
   }
   testNum++;
 
@@ -326,11 +333,20 @@ async function runLiveTests() {
     console.log(`  Result: ✅ Concurrent execution prevented. 1 Success, 1 Blocked.`);
   } else {
     console.log(`  Result: ❌ Failed concurrency. Successes: ${successCount}, Errors: ${errorCount}, Results: ${JSON.stringify(results13)}`);
+    hasFailures = true;
   }
 
   console.log('==========================================');
   console.log('All tests completed.');
   server.close();
+  
+  if (hasFailures) {
+    console.error('❌ SOME TESTS FAILED');
+    process.exit(1);
+  } else {
+    console.log('✅ ALL TESTS PASSED');
+    process.exit(0);
+  }
 }
 
 setTimeout(runLiveTests, 100);
