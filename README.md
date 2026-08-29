@@ -304,6 +304,10 @@ flowchart TD
     G --> H[Audit Ledger]
 ```
 
+### Full AI Buyer State Machine Flow
+The complete autonomous lifecycle from intention to verified payment is rigorously tracked through these states:
+`DISCOVER -> COMPARE -> NEGOTIATE -> POLICY_REJECT -> ADAPT -> READY_FOR_CHECKOUT -> CONFIRM -> JIT -> IDEMPOTENCY -> RAZORPAY -> VERIFY`
+
 > [!NOTE]
 > No real money is used in the MVP.
 
