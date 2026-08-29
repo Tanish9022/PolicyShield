@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS actions (
   intent_id         TEXT    NOT NULL REFERENCES intents(intent_id),
   merchant_id       TEXT    NOT NULL,
   idempotency_key   TEXT    NOT NULL UNIQUE,
+  external_receipt  TEXT    UNIQUE,
   action_type       TEXT    NOT NULL,
   state             TEXT    NOT NULL DEFAULT 'PROPOSED',
   decision          TEXT    NOT NULL,
@@ -90,6 +91,7 @@ CREATE TABLE IF NOT EXISTS webhook_events (
 
 CREATE INDEX IF NOT EXISTS idx_actions_intent     ON actions(intent_id);
 CREATE INDEX IF NOT EXISTS idx_actions_idempotency ON actions(idempotency_key);
+CREATE INDEX IF NOT EXISTS idx_actions_receipt    ON actions(external_receipt);
 CREATE INDEX IF NOT EXISTS idx_audit_intent        ON audit_events(intent_id);
 CREATE INDEX IF NOT EXISTS idx_audit_action        ON audit_events(action_id);
 CREATE INDEX IF NOT EXISTS idx_policy_merchant     ON policy_versions(merchant_id);

@@ -20,7 +20,7 @@ export const CUSTOMERS: Customer[] = [
 ];
 
 export const PROMOTIONS: Promotion[] = [
-  { promotion_id: 'promo_15', name: 'Clearance 15%', discount_percent: 15, applicable_product_ids: ['prod_laptop_2'], eligible_segments: [], active: true, valid_from: '2023-01-01', valid_until: '2029-12-31' },
+  { promotion_id: 'promo_15', name: 'Clearance 15%', discount_percent: 15, applicable_product_ids: ['prod_laptop_2', 'prod_airpods'], eligible_segments: [], active: true, valid_from: '2023-01-01', valid_until: '2029-12-31' },
   { promotion_id: 'promo_5', name: 'Standard 5%', discount_percent: 5, applicable_product_ids: [], eligible_segments: [], active: true, valid_from: '2023-01-01', valid_until: '2029-12-31' },
 ];
 

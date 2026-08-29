@@ -8,11 +8,13 @@
     "start": "node dist/index.js",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:reset": "tsx src/db/reset.ts",
-    "test:all": "tsx src/eval/razorpay.test.ts && tsx src/eval/live-tests.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:all": "vitest run",
     "eval:gemini": "tsx src/eval/gemini-eval.ts",
     "eval:benchmark": "tsx src/eval/benchmark.ts",
-    "eval:redteam": "tsx src/eval/live-tests.ts",
-    "eval:ci": "tsx src/eval/ci-assert.ts",
+    "eval:redteam": "vitest run --testNamePattern='redteam'",
+    "eval:ci": "vitest run",
     "eval:report": "tsx src/eval/generate-final-report.ts"
   },
   "dependencies": {
@@ -30,8 +32,12 @@
     "@types/better-sqlite3": "^7.6.0",
     "@types/cors": "^2.8.0",
     "@types/express": "^4.17.0",
+    "@types/node": "^26.4.0",
+    "@types/supertest": "^7.2.1",
     "@types/uuid": "^10.0.0",
+    "supertest": "^7.2.2",
     "tsx": "^4.16.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "vitest": "^4.1.11"
   }
 }

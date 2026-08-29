@@ -131,14 +131,17 @@ export async function processIntent(intent: IntentRequest): Promise<any> {
   
   const finalState = gateResult.decision === 'APPROVE' ? 'VALIDATED' : (gateResult.decision === 'ESCALATE' ? 'ESCALATED' : 'BLOCKED');
 
+  const externalReceipt = `ps_${uuidv4().substring(0, 8)}`;
+
   db.prepare(`
-    INSERT INTO actions (action_id, intent_id, merchant_id, idempotency_key, action_type, state, decision, policy_version, parameters_json)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO actions (action_id, intent_id, merchant_id, idempotency_key, external_receipt, action_type, state, decision, policy_version, parameters_json)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     actionId,
     intent.intent_id,
     intent.merchant_id,
     `idemp_${intent.intent_id}`, // basic idempotency
+    externalReceipt,
     negotiation.proposed_action.type,
     finalState,
     gateResult.decision,
@@ -266,7 +269,7 @@ export async function resolveUnknownExecution(intentId: string, tracer?: Telemet
   
   logAudit({ event_type: AuditEventType.EXECUTION_RECOVERY, intent_id: intentId, action_id: action.action_id });
   const { RazorpayAdapter } = await import('../execution/razorpay');
-  const existingOrder = await RazorpayAdapter.fetchOrderByReceipt(action.idempotency_key);
+  const existingOrder = await RazorpayAdapter.fetchOrderByReceipt(action.external_receipt);
   
   if (existingOrder) {
     db.prepare(`UPDATE actions SET state = 'VERIFIED_SUCCESS', razorpay_order_id = ? WHERE action_id = ?`).run(existingOrder.id, action.action_id);

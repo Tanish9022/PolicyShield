@@ -95,7 +95,7 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
       const order = (await RazorpayAdapter.createOrder(
         amountInPaise, 
         parameters.currency || 'INR', 
-        action.idempotency_key
+        action.external_receipt
       )) as any;
       
       if (tracer) tracer.recordStage('RAZORPAY', startRazorpay, 'SUCCESS');

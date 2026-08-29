@@ -11,7 +11,17 @@ import webhookRoutes from '../routes/webhook.routes';
 
 process.env.RAZORPAY_KEY_ID = 'rzp_test_mock';
 process.env.RAZORPAY_KEY_SECRET = 'rzp_test_secret';
+process.env.RAZORPAY_WEBHOOK_SECRET = 'secret';
 process.env.STUB_AI = 'true';
+
+import { getDb } from '../db/client';
+const db = getDb();
+db.prepare('DELETE FROM policy_versions').run();
+db.prepare('DELETE FROM products').run();
+db.prepare('DELETE FROM inventory').run();
+db.prepare('DELETE FROM actions').run();
+db.prepare('DELETE FROM intents').run();
+db.prepare('DELETE FROM agent_runs').run();
 
 // Require seed to reset DB state for reproducible runs
 require('../db/seed');

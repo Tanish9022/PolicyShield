@@ -9,6 +9,9 @@ const router = Router();
 router.post('/razorpay', (req, res) => {
   const signature = req.headers['x-razorpay-signature'] as string;
   const rawBody = req.body.toString('utf8');
+  console.log("RAW BODY:", rawBody);
+  console.log("SIGNATURE:", signature);
+  console.log("SECRET:", process.env.RAZORPAY_WEBHOOK_SECRET);
 
   // 1. Verify Signature
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET;

@@ -1,0 +1,15 @@
+import { beforeEach, beforeAll, afterAll } from 'vitest';
+import { setupTestDatabase, teardownTestDatabase, resetTestDatabase } from './test-db';
+
+beforeAll(() => {
+  process.env.STUB_AI = 'true';
+  setupTestDatabase();
+});
+
+beforeEach(() => {
+  resetTestDatabase();
+});
+
+afterAll(() => {
+  teardownTestDatabase();
+});
