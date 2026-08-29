@@ -68,7 +68,7 @@ describe('AI Buyer E2E Flow', () => {
     });
 
     const razorpaySpy = vi.spyOn(razorpay.RazorpayAdapter, 'createOrder').mockImplementation(async (amount: number, currency: string, receipt: string) => {
-      return { id: `order_${uuidv4()}`, receipt, status: 'created' };
+      return { id: `order_${uuidv4()}`, amount, currency, receipt };
     });
 
     // 1. Process Intent (DISCOVER -> COMPARE -> NEGOTIATE -> POLICY_REJECT -> ADAPT -> READY_FOR_CHECKOUT)
