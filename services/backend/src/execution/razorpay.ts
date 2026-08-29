@@ -6,9 +6,9 @@ import crypto from 'crypto';
 
 export const RazorpayAdapter = {
   
-  createOrder: async (amount: number, currency: string, receipt: string) => {
+  createOrder: async (amountInPaise: number, currency: string, receipt: string) => {
     if (process.env.STUB_AI || process.env.STUB_RAZORPAY) {
-      return { id: 'order_stub_' + Math.random().toString(36).substring(7), amount, currency, receipt };
+      return { id: 'order_stub_' + Math.random().toString(36).substring(7), amount: amountInPaise, currency, receipt };
     }
 
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
@@ -21,7 +21,7 @@ export const RazorpayAdapter = {
     });
 
     return await rzp.orders.create({
-      amount: Math.round(amount * 100), // convert to paise
+      amount: Math.round(amountInPaise),
       currency,
       receipt,
       payment_capture: true
