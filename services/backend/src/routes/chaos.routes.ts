@@ -37,4 +37,10 @@ router.post('/reset', (req, res) => {
   }
 });
 
+router.post('/timeout', (req, res) => {
+  const { enabled = true } = req.body;
+  process.env.SIMULATE_TIMEOUT = enabled ? 'true' : 'false';
+  res.json({ status: 'CHAOS_INJECTED', message: `SIMULATE_TIMEOUT set to ${process.env.SIMULATE_TIMEOUT}` });
+});
+
 export default router;
