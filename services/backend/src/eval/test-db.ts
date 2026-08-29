@@ -4,10 +4,11 @@ import { storePolicies } from '../policy-graph/graph';
 import { PolicyGraph } from '@policyshield/shared';
 import fs from 'fs';
 import path from 'path';
+import Database from 'better-sqlite3';
 
 let testDbPath: string | null = null;
 
-export function setupTestDatabase() {
+export function setupTestDatabase(): Database.Database {
   process.env.RAZORPAY_WEBHOOK_SECRET = 'test-only-secret';
   testDbPath = `./tmp-test-${uuidv4()}.db`;
   process.env.DB_PATH = testDbPath;
