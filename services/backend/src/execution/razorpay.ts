@@ -11,6 +11,10 @@ export const RazorpayAdapter = {
       return { id: 'order_stub_' + Math.random().toString(36).substring(7), amount: amountInPaise, currency, receipt };
     }
 
+    if (process.env.SIMULATE_TIMEOUT === 'true') {
+      throw new Error('Simulated Razorpay API Timeout');
+    }
+
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
       throw new Error('Razorpay credentials not configured');
     }
