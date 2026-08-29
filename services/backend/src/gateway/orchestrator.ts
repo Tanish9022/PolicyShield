@@ -164,10 +164,11 @@ export async function processIntent(intent: IntentRequest): Promise<any> {
       // For simplicity, if it's the exact same payload, we just return the existing one.
       const existingAction = db.prepare('SELECT * FROM actions WHERE idempotency_key = ?').get(idempKey) as any;
       tracer.completeTrace(existingAction.state);
+      const existingAgentRun = db.prepare('SELECT * FROM agent_runs WHERE intent_id = ? ORDER BY created_at DESC LIMIT 1').get(intent.intent_id) as any;
       return {
         gate_decision: existingAction.decision,
         reasons: JSON.parse(existingAction.reason_codes_json || '[]'),
-        agent_run: agentRun,
+        agent_run: existingAgentRun,
         candidates: candidates,
         action: existingAction
       };
