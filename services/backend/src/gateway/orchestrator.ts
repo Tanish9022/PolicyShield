@@ -131,23 +131,49 @@ export async function processIntent(intent: IntentRequest): Promise<any> {
   
   const finalState = gateResult.decision === 'APPROVE' ? 'VALIDATED' : (gateResult.decision === 'ESCALATE' ? 'ESCALATED' : 'BLOCKED');
 
-  const externalReceipt = `ps_${uuidv4().substring(0, 8)}`;
+  const crypto = require('crypto');
+  const idempKey = `idemp_${intent.intent_id}`;
+  const externalReceipt = `ps_${crypto.createHash('sha256').update(idempKey).digest('hex').substring(0, 36)}`;
 
-  db.prepare(`
-    INSERT INTO actions (action_id, intent_id, merchant_id, idempotency_key, external_receipt, action_type, state, decision, policy_version, parameters_json)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    actionId,
-    intent.intent_id,
-    intent.merchant_id,
-    `idemp_${intent.intent_id}`, // basic idempotency
-    externalReceipt,
-    negotiation.proposed_action.type,
-    finalState,
-    gateResult.decision,
-    graph.version,
-    JSON.stringify(negotiation.proposed_action)
-  );
+  try {
+    db.prepare(`
+      INSERT INTO actions (action_id, intent_id, merchant_id, idempotency_key, external_receipt, action_type, state, decision, policy_version, parameters_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      actionId,
+      intent.intent_id,
+      intent.merchant_id,
+      idempKey,
+      externalReceipt,
+      negotiation.proposed_action.type,
+      finalState,
+      gateResult.decision,
+      graph.version,
+      JSON.stringify(negotiation.proposed_action)
+    );
+  } catch (err: any) {
+    if (err.message.includes('UNIQUE constraint failed: actions.idempotency_key')) {
+      const existing = db.prepare('SELECT parameters_json FROM actions WHERE idempotency_key = ?').get(idempKey) as any;
+      if (existing.parameters_json !== JSON.stringify(negotiation.proposed_action)) {
+         tracer.recordStage('ACTION_SAVE', startAction, 'FAILURE', 'CONFLICT', 'IDEMPOTENCY_CONFLICT');
+         tracer.completeTrace('CONFLICT');
+         return { status: 'CONFLICT', reason: 'Idempotency conflict: different payload for same intent' };
+      }
+      // If same payload, we can proceed as it's a true retry of the exact same state
+      // We would just use the existing actionId. However, orchestrator is supposed to create it.
+      // For simplicity, if it's the exact same payload, we just return the existing one.
+      const existingAction = db.prepare('SELECT * FROM actions WHERE idempotency_key = ?').get(idempKey) as any;
+      tracer.completeTrace(existingAction.state);
+      return {
+        gate_decision: existingAction.decision,
+        reasons: JSON.parse(existingAction.reason_codes_json || '[]'),
+        agent_run: agentRun,
+        candidates: candidates,
+        action: existingAction
+      };
+    }
+    throw err;
+  }
 
   logAudit({ 
     event_type: AuditEventType.GATE_DECISION, 
