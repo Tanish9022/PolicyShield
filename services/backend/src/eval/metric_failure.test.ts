@@ -33,7 +33,7 @@ describe('Metric Failure Detection Tests', () => {
     // Normally TelemetryTracer logs stages linking trace_id to action_id. We skip this intentionally.
     // This action has no metric_events connecting it to the trace.
 
-    const report = await generateFinalReport();
+    const report = await generateFinalReport(false);
     
     // The report must detect that there's an action without a full trace
     expect(report.incomplete_traces).toBeGreaterThan(0);

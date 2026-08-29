@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { getDb } from '../db/client';
 
-export async function generateFinalReport() {
+export async function generateFinalReport(writeToDisk: boolean = true) {
   console.log('Generating Final PolicyShield Report...');
 
   try {
@@ -106,8 +106,10 @@ The Razorpay API surface is completely shielded from untrusted LLM outputs via J
 `;
 
     const reportPath = path.join(__dirname, '../../../../evidence/evaluations/gemini-eval-report.md');
-    fs.writeFileSync(reportPath, reportMd);
-    console.log(`✅ Final report generated at ${reportPath}`);
+    if (writeToDisk) {
+      fs.writeFileSync(reportPath, reportMd);
+      console.log(`✅ Final report generated at ${reportPath}`);
+    }
 
     return {
       incomplete_traces: incompleteTraces,
