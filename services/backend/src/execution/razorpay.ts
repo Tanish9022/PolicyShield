@@ -43,6 +43,9 @@ export const RazorpayAdapter = {
   },
   
   fetchOrder: async (orderId: string) => {
+    if (process.env.STUB_AI || process.env.STUB_RAZORPAY) {
+      return { id: orderId, status: 'created' };
+    }
     const rzp = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID!,
       key_secret: process.env.RAZORPAY_KEY_SECRET!,
