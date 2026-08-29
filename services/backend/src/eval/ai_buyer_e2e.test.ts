@@ -19,9 +19,9 @@ describe('AI Buyer E2E Flow', () => {
     const buyerInput = 'I want airpods and a student discount';
 
     const intent: IntentRequest = {
-      request_id: requestId,
-      intent_id: intentId,
-      merchant_id: merchantId,
+      request_id: requestId as any,
+      intent_id: intentId as any,
+      merchant_id: merchantId as any,
       buyer_input: buyerInput,
       received_at: new Date().toISOString()
     };
@@ -33,7 +33,7 @@ describe('AI Buyer E2E Flow', () => {
     const compareSpy = vi.spyOn(comparison, 'compareCandidates').mockResolvedValue({
       decision: 'SELECT',
       selected_product_id: 'prod_airpods',
-      reasoning: 'Selected airpods'
+      reasoning_evidence: ['Selected airpods']
     });
 
     // Mock negotiation to first propose an invalid discount, then adapt to a valid one
@@ -67,7 +67,7 @@ describe('AI Buyer E2E Flow', () => {
       }
     });
 
-    const razorpaySpy = vi.spyOn(razorpay.RazorpayAdapter as any, 'createOrder').mockImplementation(async (amount: number, currency: string, receipt: string) => {
+    const razorpaySpy = vi.spyOn(razorpay.RazorpayAdapter, 'createOrder').mockImplementation(async (amount: number, currency: string, receipt: string) => {
       return { id: `order_${uuidv4()}`, receipt, status: 'created' };
     });
 
