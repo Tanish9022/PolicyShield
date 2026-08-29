@@ -29,9 +29,13 @@ export const RazorpayAdapter = {
   },
 
   verifySignature: (body: string, signature: string, secret: string): boolean => {
+    // Fail closed if the secret is missing or empty
+    if (!secret || secret.trim() === '') {
+      return false;
+    }
     // Standard HMAC verification
     const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET || 'secret')
+      .createHmac('sha256', secret)
       .update(body)
       .digest('hex');
     

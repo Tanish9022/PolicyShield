@@ -11,7 +11,12 @@ router.post('/razorpay', (req, res) => {
   const rawBody = req.body.toString('utf8');
 
   // 1. Verify Signature
-  if (!RazorpayAdapter.verifySignature(rawBody, signature, process.env.RAZORPAY_WEBHOOK_SECRET || 'secret')) {
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  if (!secret) {
+    return res.status(500).json({ error: 'Webhook secret not configured' });
+  }
+
+  if (!RazorpayAdapter.verifySignature(rawBody, signature, secret)) {
     return res.status(400).json({ error: 'Invalid signature' });
   }
 
