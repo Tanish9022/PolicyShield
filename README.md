@@ -674,14 +674,17 @@ Benchmark results shown in this repository must come from the actual evaluation 
 3. **Webhook Verification Scope:** While signatures are verified, full Razorpay event mapping (like partial refunds or disputes) is incomplete and only handles `payment.captured` or `order.paid`.
 
 ### Critical Fixes (Implemented)
-- **Rate-limit Resilience:** Caching and backoff introduced to `gemini-eval.ts` to accommodate API exhaustion without breaking the deterministic gate.
+- **Webhook Security:** Fixed a critical "fail open" vulnerability where a missing `RAZORPAY_WEBHOOK_SECRET` would default to `'secret'` instead of failing closed.
+- **Double-Conversion Bug:** Fixed a bug where Razorpay order amounts were being multiplied by 100 twice, causing incorrect charges.
+- **Recovery Coverage:** Added proper mocking and startup polling for `EXECUTION_UNKNOWN` to ensure the system safely recovers orphaned transactions.
+- **Agent Output Boundary:** Enforced strict Zod runtime schema validation on the AI output before it can enter the deterministic execution pipeline.
 - **Strict Hard Gate:** JIT Re-validation explicitly implemented in `executor.ts` immediately before Razorpay `createOrder`.
 
 ### Evidence Verified
-- ✅ **10-point Adversarial Suite:** Verified via `live-tests.ts`. Correctly recovered from timeouts and correctly deduplicated requests.
+- ✅ **13-point Adversarial Suite:** Verified via `live-tests.ts`. Correctly recovered from timeouts, deduplicated requests, blocked TOCTOU races, and aligned prompt-injection behavior.
 - ✅ **1000-case Benchmark:** Verified via `run-eval.ts`. Zero unsafe autonomous actions executed across 1000 trials.
-- ✅ **Real Gemini Eval:** Verified via `gemini-eval.ts`. Successfully blocked 100% of injected policy violations.
-- ✅ **Razorpay Test Integration:** Actual API calls made and verified via async mock webhooks and JIT state validation.
+- ✅ **Startup Recovery:** Verified via `index.ts`. Automatically resolves pending `EXECUTION_UNKNOWN` actions upon boot.
+- ✅ **Razorpay Test Integration:** Actual API calls made and verified via async webhooks and JIT state validation.
 
 ### Evidence Not Verified
 - ❌ **Production Throughput:** The system is single-node SQLite and not load-tested for concurrent, high-throughput webhook storms beyond simple duplicates.
@@ -696,8 +699,8 @@ Benchmark results shown in this repository must come from the actual evaluation 
 - **Unsafe Autonomous Actions:** 0.0%
 - **Policy Adherence:** 100%
 
-### 10 Adversarial Test Results
-All 10 hostile paths—including duplicate requests, prompt injections, stale prices, inventory mutations, and API timeouts—safely recovered or gracefully rejected. (Log evidence in `live-tests.ts` output).
+### 13 Adversarial Test Results
+All 13 hostile paths—including duplicate requests, prompt injections, stale prices, inventory mutations, concurrency TOCTOU, policy race conditions, and API timeouts—safely recovered or gracefully rejected. (Log evidence in `live-tests.ts` output).
 
 ### Remaining Risks
 - **Concurrency Bottlenecks:** In a highly concurrent environment, a policy race might still occur between JIT re-validation and the Razorpay API acknowledgement if taking longer than anticipated.
