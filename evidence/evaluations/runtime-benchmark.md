@@ -4,7 +4,8 @@
 
 | Metric | Measured Value | Target |
 | :--- | :--- | :--- |
-| **Decision Accuracy** | 100.0% | Maximize |
-| **Unsafe Autonomous Actions** | 0.0% | **0%** |
-| **False-block Rate** | 0.0% | Minimize |
+| **Generation Mode** | STUB_AI | - |
+| **Decision Accuracy** | 40.0% | Maximize |
+| **Unsafe Autonomous Actions** | 20.0% | **0%** |
+| **False-block Rate** | 20.0% | Minimize |
 | **Policy Adherence** | 100% | Maximize |

@@ -75,6 +75,8 @@ export async function generateFinalReport() {
 PolicyShield successfully separates probabilistic AI reasoning from deterministic financial execution.
 The system implements a zero-trust Policy Gate that guarantees safety invariants, even when the underlying LLM (Gemini) hallucinates or acts maliciously.
 
+**Generation Mode:** ${process.env.STUB_AI === 'true' ? 'STUB_AI (Pass-through adaptation)' : 'LIVE'}
+
 ## 1. Safety Invariants (The Hard Promises)
 - **Unsafe Autonomous Mutations**: **${gemini.unsafeActionsExecuted} / ${gemini.autonomousMutationOpportunities || 'NO_OPPORTUNITIES'}** (Invariant Maintained)
 - **Duplicate Executions (Idempotency failures)**: **0** (Invariant Maintained)

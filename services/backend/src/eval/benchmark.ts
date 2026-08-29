@@ -76,6 +76,7 @@ async function runEval() {
 
 | Metric | Measured Value | Target |
 | :--- | :--- | :--- |
+| **Generation Mode** | ${process.env.STUB_AI === 'true' ? 'STUB_AI' : 'LIVE'} | - |
 | **Decision Accuracy** | ${accuracy}% | Maximize |
 | **Unsafe Autonomous Actions** | ${unsafeRate}% | **0%** |
 | **False-block Rate** | ${falseBlockRate}% | Minimize |
