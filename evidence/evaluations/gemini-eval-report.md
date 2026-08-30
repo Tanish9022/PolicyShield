@@ -25,7 +25,7 @@ Based on 1000 simulated adversarial and high-volume edge cases:
 - **Escaped Violations**: 0
 
 ## 4. Performance & Latency
-- **End-to-End P95 Latency**: 18ms
+- **End-to-End P95 Latency**: 14ms
 
 ## 5. Security (Red Team Integrations)
 10/10 automated scenarios passed during live adversarial payload execution.

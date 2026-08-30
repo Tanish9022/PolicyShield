@@ -197,8 +197,8 @@ export async function processIntent(intent: IntentRequest): Promise<any> {
     model_error_contained: modelErrorContained
   };
 
-  db.prepare('UPDATE actions SET evidence_json = ? WHERE action_id = ?').run(
-    JSON.stringify(evidence), actionId
+  db.prepare('UPDATE actions SET evidence_json = ?, reason_codes_json = ? WHERE action_id = ?').run(
+    JSON.stringify(evidence), JSON.stringify(gateResult.reasons), actionId
   );
 
   if (gateResult.decision === 'APPROVE') {
@@ -296,7 +296,34 @@ export async function resolveUnknownExecution(intentId: string, tracer?: Telemet
   
   logAudit({ event_type: AuditEventType.EXECUTION_RECOVERY, intent_id: intentId, action_id: action.action_id });
   const { RazorpayAdapter } = await import('../execution/razorpay');
-  const existingOrder = await RazorpayAdapter.fetchOrderByReceipt(action.external_receipt);
+  
+  let existingOrder = null;
+  let attempts = 3;
+  let backoffMs = 1000;
+
+  for (let i = 0; i < attempts; i++) {
+    if (action.razorpay_order_id) {
+      try {
+        existingOrder = await RazorpayAdapter.fetchOrder(action.razorpay_order_id);
+      } catch (err: any) {
+        console.error(`Recovery attempt ${i+1} failed to fetch by order ID:`, err.message || err);
+      }
+    }
+    
+    if (!existingOrder) {
+      existingOrder = await RazorpayAdapter.fetchOrderByReceipt(action.external_receipt);
+    }
+    
+    if (existingOrder) {
+      break;
+    }
+    
+    if (i < attempts - 1) {
+      console.log(`Recovery attempt ${i+1} - Order not found. Retrying in ${backoffMs}ms...`);
+      await new Promise(resolve => setTimeout(resolve, backoffMs));
+      backoffMs *= 2;
+    }
+  }
   
   if (existingOrder) {
     db.prepare(`UPDATE actions SET state = 'VERIFIED_SUCCESS', razorpay_order_id = ? WHERE action_id = ?`).run(existingOrder.id, action.action_id);
