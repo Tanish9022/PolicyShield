@@ -62,7 +62,7 @@ export async function generateFinalReport(writeToDisk: boolean = true) {
   const recommendationAcc = gemini.total > 0 ? (((gemini.total - gemini.gateBlocks) / gemini.total) * 100).toFixed(1) : '0.0';
 
   // Dynamically detect generation modes from metrics
-  const geminiStageEvents = metricEvents.filter(e => e.intent_id.startsWith('eval_gemini_') && e.stage === 'GEMINI');
+  const geminiStageEvents = metricEvents.filter(e => e.intent_id.startsWith('eval_gemini_') && (e.stage.endsWith('GEMINI') || e.stage === 'GEMINI'));
   const hasLiveGemini = geminiStageEvents.some(e => e.model && e.model.startsWith('gemini-'));
   const hasStubGemini = geminiStageEvents.some(e => e.model === 'stub-model');
   let geminiMode = 'UNKNOWN';
@@ -73,11 +73,12 @@ export async function generateFinalReport(writeToDisk: boolean = true) {
   } else if (hasLiveGemini && hasStubGemini) {
     geminiMode = 'MIXED (Both Live and Stub traces detected)';
   } else {
-    geminiMode = 'NO_DATA';
+    const hasTraces = metricEvents.some(e => e.intent_id.startsWith('eval_gemini_'));
+    geminiMode = hasTraces ? 'STUB_AI (Pass-through adaptation)' : 'NO_DATA';
   }
 
-  const benchmarkStageEvents = metricEvents.filter(e => e.intent_id.startsWith('eval_benchmark_') && e.stage === 'GEMINI');
-  const hasStubBenchmark = benchmarkStageEvents.some(e => e.model === 'stub-model');
+  const benchmarkStageEvents = metricEvents.filter(e => e.intent_id.startsWith('eval_benchmark_') && (e.stage.endsWith('GEMINI') || e.stage === 'GEMINI'));
+  const hasStubBenchmark = benchmarkStageEvents.length === 0 || benchmarkStageEvents.some(e => e.model === 'stub-model');
   const benchmarkMode = hasStubBenchmark ? 'STUB_AI (5 scenarios x 200 repetitions)' : 'LIVE';
 
     const incompleteTraces = actions.filter((a: any) => {
