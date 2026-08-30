@@ -6,8 +6,8 @@ import * as path from 'path';
 import { getDb } from '../db/client';
 import { processIntent } from '../gateway/orchestrator';
 
-// Enforce STUB_AI for fast local evaluation
-process.env.STUB_AI = 'true';
+// Enforce real AI for live evaluation
+process.env.STUB_AI = '';
 
 const merchantId = 'merchant_gemini_eval';
 const db = getDb();

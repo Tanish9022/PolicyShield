@@ -11,7 +11,7 @@ const navItems = [
   { path: '/audit', label: 'Audit Ledger', icon: <Search size={18} /> },
   { path: '/chaos', label: 'Chaos Control', icon: <Activity size={18} /> },
   { path: '/evaluation', label: 'Evaluation', icon: <FlaskConical size={18} /> },
-  { path: '/demo', label: 'Cinematic Demo', icon: <Play size={18} /> }
+  { path: '/demo', label: 'End-to-End Checkout Demo', icon: <Play size={18} /> }
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {

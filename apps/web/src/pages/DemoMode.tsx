@@ -80,7 +80,7 @@ export default function DemoMode() {
     <div className="flex flex-col items-center max-w-4xl mx-auto h-full space-y-8 py-10 animate-in zoom-in-95 duration-500">
       
       <div className="text-center space-y-4">
-        <h1 className="text-4xl font-display font-bold text-primary">Real AI Buyer Simulation</h1>
+        <h1 className="text-4xl font-display font-bold text-primary">End-to-End Checkout Demo</h1>
         <p className="text-text-muted">Experience the end-to-end agentic commerce flow with deterministic safety.</p>
       </div>
 

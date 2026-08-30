@@ -6,6 +6,17 @@ import { TelemetryTracer } from '../gateway/telemetry';
 
 
 
+/**
+ * Executes a deterministically approved action by interfacing with the payment gateway.
+ * 
+ * Includes JIT (Just-In-Time) validation to ensure state hasn't mutated since the AI proposed the action.
+ * Atomically transitions states to prevent concurrent double-executions (idempotency).
+ * If the transport layer fails mid-flight, transitions to EXECUTION_UNKNOWN for later recovery.
+ * 
+ * @param actionId - The UUID of the action to execute
+ * @param tracer - Optional telemetry tracer
+ * @returns The gateway result or the failure state
+ */
 export async function executeAction(actionId: string, tracer?: TelemetryTracer): Promise<any> {
   const db = getDb();
   
@@ -59,9 +70,12 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
   
   if (tracer) tracer.recordStage('JIT', startJit, 'SUCCESS');
 
-  // Idempotency
+  // Idempotency check: Ensure this action is not already executing or completed
   const startIdempotency = performance.now();
-  // We use `action.idempotency_key` uniquely. If it fails due to UNIQUE constraint in DB or Razorpay, we catch it.
+  if (action.state === 'EXECUTING' || action.state === 'VERIFIED_SUCCESS') {
+    if (tracer) tracer.recordStage('IDEMPOTENCY', startIdempotency, 'FAILURE', undefined, 'ALREADY_EXECUTED_OR_EXECUTING');
+    throw new Error(`Action ${actionId} is already in state ${action.state}`);
+  }
   if (tracer) tracer.recordStage('IDEMPOTENCY', startIdempotency, 'SUCCESS');
 
   // 2. Transition to EXECUTING atomically to prevent concurrent executions

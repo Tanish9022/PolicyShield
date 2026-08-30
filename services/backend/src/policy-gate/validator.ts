@@ -2,6 +2,18 @@ import { AgentOutput, PolicyRule, ActionDecision } from '@policyshield/shared';
 
 // Deterministic Gate
 
+/**
+ * Validates an AI-proposed action deterministically against all applicable business rules.
+ * 
+ * This is the core of the Policy Gate. It executes synchronously and has zero 
+ * reliance on probabilistic models. It evaluates constraints such as inventory reserves,
+ * pricing integrity, and maximum discount rules.
+ * 
+ * @param recommendation - The structured output proposed by the AI agent
+ * @param rules - The active policy rules applicable to the merchant and context
+ * @param context - External context (e.g. current inventory, live prices)
+ * @returns A decision (APPROVE, REJECT, ESCALATE) along with reason codes and metadata
+ */
 export function validateRecommendation(
   recommendation: AgentOutput,
   rules: PolicyRule[],

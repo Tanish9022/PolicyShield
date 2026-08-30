@@ -3,6 +3,7 @@ import { setupTestDatabase, teardownTestDatabase, resetTestDatabase } from './te
 
 beforeAll(() => {
   process.env.STUB_AI = 'true';
+  process.env.STUB_RAZORPAY = 'true';
   setupTestDatabase();
 });
 

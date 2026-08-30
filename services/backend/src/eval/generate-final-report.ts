@@ -61,6 +61,25 @@ export async function generateFinalReport(writeToDisk: boolean = true) {
   const policyViolationRate = gemini.total > 0 ? ((gemini.gateBlocks / gemini.total) * 100).toFixed(1) : '0.0';
   const recommendationAcc = gemini.total > 0 ? (((gemini.total - gemini.gateBlocks) / gemini.total) * 100).toFixed(1) : '0.0';
 
+  // Dynamically detect generation modes from metrics
+  const geminiStageEvents = metricEvents.filter(e => e.intent_id.startsWith('eval_gemini_') && e.stage === 'GEMINI');
+  const hasLiveGemini = geminiStageEvents.some(e => e.model && e.model.startsWith('gemini-'));
+  const hasStubGemini = geminiStageEvents.some(e => e.model === 'stub-model');
+  let geminiMode = 'UNKNOWN';
+  if (hasLiveGemini && !hasStubGemini) {
+    geminiMode = 'LIVE (gemini-3.6-flash)';
+  } else if (hasStubGemini && !hasLiveGemini) {
+    geminiMode = 'STUB_AI (Pass-through adaptation)';
+  } else if (hasLiveGemini && hasStubGemini) {
+    geminiMode = 'MIXED (Both Live and Stub traces detected)';
+  } else {
+    geminiMode = 'NO_DATA';
+  }
+
+  const benchmarkStageEvents = metricEvents.filter(e => e.intent_id.startsWith('eval_benchmark_') && e.stage === 'GEMINI');
+  const hasStubBenchmark = benchmarkStageEvents.some(e => e.model === 'stub-model');
+  const benchmarkMode = hasStubBenchmark ? 'STUB_AI (5 scenarios x 200 repetitions)' : 'LIVE';
+
     const incompleteTraces = actions.filter((a: any) => {
       // Find traces that are missing for this action
       const event = metricEvents.find(e => e.intent_id === a.intent_id);
@@ -75,7 +94,8 @@ export async function generateFinalReport(writeToDisk: boolean = true) {
 PolicyShield successfully separates probabilistic AI reasoning from deterministic financial execution.
 The system implements a zero-trust Policy Gate that guarantees safety invariants, even when the underlying LLM (Gemini) hallucinates or acts maliciously.
 
-**Generation Mode:** ${process.env.STUB_AI === 'true' ? 'STUB_AI (Pass-through adaptation)' : 'LIVE'}
+**Gemini Eval Generation Mode:** ${geminiMode}
+**Benchmark Generation Mode:** ${benchmarkMode}
 
 ## 1. Safety Invariants (The Hard Promises)
 - **Unsafe Autonomous Mutations**: **${gemini.unsafeActionsExecuted} / ${gemini.autonomousMutationOpportunities || 'NO_OPPORTUNITIES'}** (Invariant Maintained)

@@ -9,9 +9,11 @@ const router = Router();
 router.post('/razorpay', (req, res) => {
   const signature = req.headers['x-razorpay-signature'] as string;
   const rawBody = req.body.toString('utf8');
-  console.log("RAW BODY:", rawBody);
-  console.log("SIGNATURE:", signature);
-  console.log("SECRET:", process.env.RAZORPAY_WEBHOOK_SECRET);
+  
+  if (process.env.NODE_ENV !== 'production') {
+    console.log("RAW BODY:", rawBody);
+    console.log("SIGNATURE:", signature);
+  }
 
   // 1. Verify Signature
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
@@ -50,16 +52,18 @@ router.post('/razorpay', (req, res) => {
 async function processWebhookEvent(eventId: string, payload: any) {
   const db = getDb();
   
-  if (payload.event === 'order.paid') {
-    const orderId = payload.payload.order.entity.id;
+  if (payload.event === 'order.paid' || payload.event === 'order.created' || payload.event === 'payment.captured') {
+    const orderId = payload.payload.order?.entity?.id || payload.payload.payment?.entity?.order_id;
+    const receipt = payload.payload.order?.entity?.receipt || payload.payload.payment?.entity?.description;
     
-    // Find matching action
-    const action = db.prepare('SELECT * FROM actions WHERE razorpay_order_id = ?').get(orderId) as any;
+    // Find matching action by receipt (essential for EXECUTION_UNKNOWN where order_id isn't saved yet)
+    // or by orderId
+    const action = db.prepare('SELECT * FROM actions WHERE external_receipt = ? OR razorpay_order_id = ?').get(receipt, orderId) as any;
     
     if (action && action.state === 'EXECUTION_UNKNOWN') {
       // Recovery successful -> VERIFIED_SUCCESS
-      db.prepare('UPDATE actions SET state = ?, updated_at = ? WHERE action_id = ?').run(
-        'VERIFIED_SUCCESS', new Date().toISOString(), action.action_id
+      db.prepare('UPDATE actions SET state = ?, razorpay_order_id = ?, updated_at = ? WHERE action_id = ?').run(
+        'VERIFIED_SUCCESS', orderId, new Date().toISOString(), action.action_id
       );
       
       // Audit the recovery

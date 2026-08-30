@@ -37,7 +37,9 @@ app.use((req, res, next) => {
 
 app.use(cors());
 app.use(requestIdMiddleware);
-app.use(chaosMiddleware);
+if (process.env.NODE_ENV !== 'production') {
+  app.use(chaosMiddleware);
+}
 
 // ─── Health Check ───────────────────────────────────────────────
 

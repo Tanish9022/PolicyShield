@@ -304,12 +304,14 @@ flowchart TD
     G --> H[Audit Ledger]
 ```
 
-### Full AI Buyer State Machine Flow
-The complete autonomous lifecycle from intention to verified payment is rigorously tracked through these states:
-`DISCOVER -> COMPARE -> NEGOTIATE -> POLICY_REJECT -> ADAPT -> READY_FOR_CHECKOUT -> CONFIRM -> JIT -> IDEMPOTENCY -> RAZORPAY -> VERIFY`
+### How This Works (The Execution Boundary)
+The most critical part of this demo is the handoff from AI to deterministic execution:
+1. **AI Output Validation**: The AI output is parsed into a strict Zod schema. If the schema fails, it's rejected before even reaching the policy gate.
+2. **JIT (Just-In-Time) Verification**: Immediately before `executeAction` creates the Razorpay Test Order, it re-fetches the authoritative inventory and price from the SQLite database. If inventory has changed since the AI made its recommendation, the execution is atomically aborted.
+3. **Idempotent Webhooks**: If the Razorpay API times out or the connection drops (`EXECUTION_UNKNOWN`), the system relies on Razorpay Webhooks (`order.paid`, `payment.captured`) and the uniquely generated `external_receipt` to asynchronously recover the transaction state, preventing double-billing.
 
 > [!NOTE]
-> No real money is used in the MVP.
+> No real money is used in the MVP. All operations run against Razorpay Test Mode APIs.
 
 ---
 

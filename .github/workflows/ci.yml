@@ -28,9 +28,6 @@ jobs:
       - name: Lint
         run: npm run lint --if-present
 
-      - name: Run Unit Tests
-        run: npx vitest run
-
       - name: Run Backend Tests (including 10-point adversarial suite)
         run: npm run test:all --workspace=services/backend
 

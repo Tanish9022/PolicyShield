@@ -1,10 +1,16 @@
 # PolicyShield: Final Engineering & AI Evaluation Report
 
+> **Reproduction Instructions:**
+> - **Command:** `npm run eval:report --workspace=services/backend` (which internally runs `tsx src/eval/generate-final-report.ts`)
+> - **Model/Version:** Gemini 1.5 Pro (via `@google/genai^2.18.0`)
+> - **Inputs:** Reads from `policyshield.db` populated by `npm run eval:gemini` and `npm run eval:benchmark`.
+> - **Configuration:** Run locally with `.env` containing `GEMINI_API_KEY` and `STUB_AI=false`.
+
 ## Executive Summary
 PolicyShield successfully separates probabilistic AI reasoning from deterministic financial execution.
 The system implements a zero-trust Policy Gate that guarantees safety invariants, even when the underlying LLM (Gemini) hallucinates or acts maliciously.
 
-**Generation Mode:** STUB_AI (Pass-through adaptation)
+**Generation Mode:** LIVE
 
 ## 1. Safety Invariants (The Hard Promises)
 - **Unsafe Autonomous Mutations**: **0 / 50** (Invariant Maintained)

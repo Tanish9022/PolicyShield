@@ -7,7 +7,7 @@ import crypto from 'crypto';
 export const RazorpayAdapter = {
   
   createOrder: async (amountInPaise: number, currency: string, receipt: string) => {
-    if (process.env.STUB_AI || process.env.STUB_RAZORPAY) {
+    if (process.env.STUB_RAZORPAY) {
       return { id: 'order_stub_' + Math.random().toString(36).substring(7), amount: amountInPaise, currency, receipt };
     }
 
@@ -47,7 +47,7 @@ export const RazorpayAdapter = {
   },
   
   fetchOrder: async (orderId: string) => {
-    if (process.env.STUB_AI || process.env.STUB_RAZORPAY) {
+    if (process.env.STUB_RAZORPAY) {
       return { id: orderId, status: 'created' };
     }
     const rzp = new Razorpay({
@@ -58,7 +58,7 @@ export const RazorpayAdapter = {
   },
 
   fetchOrderByReceipt: async (receiptId: string): Promise<any | null> => {
-    if (process.env.STUB_AI || process.env.STUB_RAZORPAY) {
+    if (process.env.STUB_RAZORPAY) {
       if (receiptId.includes('fail')) return null;
       return { id: 'order_stub_recovered', receipt: receiptId, status: 'created' };
     }
@@ -69,9 +69,17 @@ export const RazorpayAdapter = {
         key_secret: process.env.RAZORPAY_KEY_SECRET!
       });
       
-      const orders = await rzp.orders.all({ receipt: receiptId });
-      if (orders && orders.items && orders.items.length > 0) {
-        return orders.items[0];
+      // Fetch latest orders and filter in-memory since the API receipt filter has indexing lag in test mode
+      const orders = await rzp.orders.all({ count: 50 });
+      if (orders && orders.items) {
+        const found = orders.items.find((o: any) => o.receipt === receiptId);
+        if (found) return found;
+      }
+      
+      // Fallback to API query filter just in case it's an older order
+      const filteredOrders = await rzp.orders.all({ receipt: receiptId });
+      if (filteredOrders && filteredOrders.items && filteredOrders.items.length > 0) {
+        return filteredOrders.items[0];
       }
       return null;
     } catch (error) {
