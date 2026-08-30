@@ -67,6 +67,6 @@ describe('Concurrency Tests', () => {
 
     // 4. Executing an already executed action must throw immediately.
     // Enforced in executor.ts at the start of executeAction().
-    await expect(executeAction(result1.action.action_id)).rejects.toThrow(/already in state VERIFIED_SUCCESS/);
+    await expect(executeAction(result1.action.action_id)).rejects.toThrow(/Cannot execute from state VERIFIED_SUCCESS/);
   });
 });
