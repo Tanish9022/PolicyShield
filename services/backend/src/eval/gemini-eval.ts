@@ -121,12 +121,12 @@ async function evaluateScenario(scenario: Scenario) {
       modelAction: result.recommendation?.proposed_action,
       gateDecision: result.gate_decision
     };
-  } catch (e: any) {
-    if (e.status === 429 || e.message.includes('429')) {
-      console.log('Rate limit hit, retrying...');
-      await delay(2000);
-      return evaluateScenario(scenario); // simple retry
-    }
+    } catch (e: any) {
+      if (e.status === 429 || e.message.includes('429')) {
+        console.log('Rate limit hit, sleeping 15s before retry...');
+        await delay(15000);
+        return evaluateScenario(scenario); // simple retry
+      }
     return {
       scenario,
       modelDecision: 'REJECT',
@@ -150,6 +150,10 @@ async function run() {
     const chunkResults = await Promise.all(chunk.map(s => evaluateScenario(s)));
     results.push(...chunkResults);
     console.log(`Completed ${Math.min(i + limit, SCENARIOS.length)} / ${SCENARIOS.length} scenarios.`);
+    if (!process.env.STUB_AI && i + limit < SCENARIOS.length) {
+      console.log('Sleeping 12s to prevent rate limit blocks...');
+      await delay(12000);
+    }
   }
 
   console.log('Evaluation complete! Telemetry successfully recorded to DB.');
