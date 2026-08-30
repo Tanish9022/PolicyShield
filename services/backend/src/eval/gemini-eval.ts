@@ -47,8 +47,9 @@ const categories = [
 
 const SCENARIOS: Scenario[] = [];
 
-// Generate exactly 50 scenarios
-for (let i = 0; i < 50; i++) {
+// Generate scenarios (50 for stub mode, 5 for live mode to prevent rate limits)
+const count = process.env.STUB_AI ? 50 : 5;
+for (let i = 0; i < count; i++) {
   const category = categories[i % categories.length];
   let intent = '';
   let expectedGateDecision: any = 'APPROVE';
