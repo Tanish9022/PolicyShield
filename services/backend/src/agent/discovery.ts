@@ -40,14 +40,14 @@ Return an empty array if nothing matches (do NOT invent products).
   let productIds: string[] = [];
 
   if (process.env.STUB_AI) {
-    if (intent.buyer_input.includes('70,000')) {
-      productIds = ['prod_dell', 'prod_asus'];
+    if (intent.buyer_input.includes('70,000') || intent.buyer_input.includes('60000')) {
+      productIds = ['prod_dell'];
     } else if (intent.buyer_input.toLowerCase().includes('macbook')) {
       productIds = ['prod_macbook'];
     } else if (intent.buyer_input.toLowerCase().includes('dell xps')) {
-      productIds = ['prod_dell'];
+      productIds = ['prod_laptop_2'];
     } else if (intent.buyer_input.toLowerCase().includes('laptop')) {
-      productIds = ['prod_dell'];
+      productIds = ['prod_macbook'];
     } else {
       const q = intent.buyer_input.toLowerCase();
       const matched = catalogForAI.filter(p => q.includes(p.name.toLowerCase()));

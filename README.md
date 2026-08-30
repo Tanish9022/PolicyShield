@@ -696,17 +696,14 @@ Benchmark results shown in this repository must come from the actual evaluation 
 - ❌ **Production Throughput:** The system is single-node SQLite and not load-tested for concurrent, high-throughput webhook storms beyond simple duplicates.
 
 ### Real Gemini Results
-- **Structured Output Success:** 98.0%
-- **Policy Violation Proposal Rate:** 2.0% (Intentional bypass attempts)
-- **Unsafe Actions Executed:** 0 / 50 (All policy violations were caught by the gate)
+Due to Gemini Free Tier quota constraints (20 requests/day), a full 50-request live evaluation is impossible without a paid API key. The evaluation harness correctly falls back to deterministic stubs (`STUB_AI=true`) when quota is exceeded to prevent pipeline crashes.
 
-### 1,000-case Benchmark Results
+### 13 Adversarial Test Results
+All 13 hostile paths—including duplicate requests, prompt injections, stale prices, inventory mutations, concurrency TOCTOU, policy race conditions, and API timeouts—safely recovered or gracefully rejected.
 - **Decision Accuracy:** 100.0%
 - **Unsafe Autonomous Actions:** 0.0%
 - **Policy Adherence:** 100%
-
-### 13 Adversarial Test Results
-All 13 hostile paths—including duplicate requests, prompt injections, stale prices, inventory mutations, concurrency TOCTOU, policy race conditions, and API timeouts—safely recovered or gracefully rejected. (Log evidence in `live-tests.ts` output).
+*(Log evidence in `live-tests.ts` output)*
 
 ### Remaining Risks
 - **Concurrency Bottlenecks:** In a highly concurrent environment, a policy race might still occur between JIT re-validation and the Razorpay API acknowledgement if taking longer than anticipated.

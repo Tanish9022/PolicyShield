@@ -70,6 +70,11 @@ CRITICAL INSTRUCTIONS:
       }
     });
   } catch (e: any) {
+    // Surface the raw failure loudly. A silent swallow here is how a total
+    // API outage (bad key, wrong model access, network block, quota) gets
+    // misread later as "0% structured output success" / bad model quality,
+    // when actually zero real model calls ever completed.
+    console.error(`[GEMINI CALL FAILED] model=gemini-3.6-flash status=${e?.status} message=${e?.message}`);
     if (tracer) tracer.recordStage('GEMINI', startGemini, 'FAILURE', undefined, e.message, 'gemini-3.6-flash');
     throw e;
   }
@@ -85,6 +90,7 @@ CRITICAL INSTRUCTIONS:
   const startSchema = performance.now();
   let parsed;
   try {
+    console.log('RAW GEMINI RESPONSE:', response.text);
     parsed = JSON.parse(response.text || '{}') as AgentOutput;
     if (tracer) tracer.recordStage('SCHEMA', startSchema, 'SUCCESS');
   } catch (e: any) {

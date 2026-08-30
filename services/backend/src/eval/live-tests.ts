@@ -62,7 +62,7 @@ async function runLiveTests() {
 
   // Reset inventory and price before tests
   db.prepare('UPDATE inventory SET stock_level = ? WHERE merchant_id = ?').run(10, merchantId);
-  db.prepare('UPDATE products SET price = ? WHERE merchant_id = ?').run(1000, merchantId);
+  db.prepare('UPDATE products SET price = ? WHERE product_id = ?').run(1000, 'prod_macbook');
 
   // Tests 1-4
   const tests = [
@@ -114,13 +114,19 @@ async function runLiveTests() {
     buyer_input: 'I want to buy the MacBook Pro at full price',
     received_at: new Date().toISOString()
   };
-  await processIntent(duplicateIntent);
-  try {
-    await processIntent(duplicateIntent);
-    console.log(`  Result: ❌ Second request should have thrown/blocked\n`);
+  const firstResult: any = await processIntent(duplicateIntent);
+  const secondResult: any = await processIntent(duplicateIntent);
+  // Correct behavior: the idempotency_key UNIQUE constraint means the second
+  // call does NOT create a new action — it safely returns the SAME action
+  // as the first call, with no exception. A throw here would actually be
+  // wrong/unsafe UX for a legitimate retry with an identical payload.
+  const sameAction = firstResult?.action?.action_id && secondResult?.action?.action_id &&
+    firstResult.action.action_id === secondResult.action.action_id;
+  if (sameAction) {
+    console.log(`  Result: ✅ Duplicate request deduped safely — same action_id returned, no duplicate mutation created.\n`);
+  } else {
+    console.log(`  Result: ❌ Second request created a DIFFERENT action — possible duplicate financial mutation risk.\n`);
     hasFailures = true;
-  } catch (e: any) {
-    console.log(`  Result: ✅ Blocked duplicate request correctly.\n`);
   }
   testNum++;
 

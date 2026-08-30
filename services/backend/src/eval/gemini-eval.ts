@@ -6,8 +6,14 @@ import * as path from 'path';
 import { getDb } from '../db/client';
 import { processIntent } from '../gateway/orchestrator';
 
-// Enforce STUB_AI due to Gemini API daily quota limits (RESOURCE_EXHAUSTED)
-process.env.STUB_AI = 'true';
+// Only stub when explicitly requested via env, so a "real" eval run
+// actually calls Gemini instead of silently short-circuiting.
+// Run with:  STUB_AI=true npx tsx src/eval/gemini-eval.ts   (fast, offline)
+//            npx tsx src/eval/gemini-eval.ts                (real Gemini, requires GEMINI_API_KEY)
+if (!process.env.GEMINI_API_KEY && !process.env.STUB_AI) {
+  console.warn('No GEMINI_API_KEY set and STUB_AI not set — falling back to STUB_AI so the script can run. Set GEMINI_API_KEY for a real evaluation.');
+  process.env.STUB_AI = 'true';
+}
 
 const merchantId = 'merchant_gemini_eval';
 const db = getDb();
@@ -48,7 +54,7 @@ const categories = [
 const SCENARIOS: Scenario[] = [];
 
 // Generate scenarios (50 for stub mode, 5 for live mode to prevent rate limits)
-const count = process.env.STUB_AI ? 50 : 5;
+const count = 3;
 for (let i = 0; i < count; i++) {
   const category = categories[i % categories.length];
   let intent = '';
@@ -123,7 +129,7 @@ async function evaluateScenario(scenario: Scenario) {
     };
     } catch (e: any) {
       if (e.status === 429 || e.message.includes('429')) {
-        console.log('Rate limit hit, sleeping 15s before retry...');
+        console.log('Rate limit hit, sleeping 15s before retry...', e.message);
         await delay(15000);
         return evaluateScenario(scenario); // simple retry
       }

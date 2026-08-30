@@ -192,7 +192,7 @@ export async function processIntent(intent: IntentRequest): Promise<any> {
     reasons: gateResult.reasons,
     discount_metadata: gateResult.metadata,
     razorpay_invoked: false, // NOT INVOKED YET
-    recommendation: { proposed_action: negotiation.proposed_action, explanation: negotiation.reasoning },
+    recommendation: { proposed_action: negotiation.proposed_action, explanation: negotiation.explanation },
     policy_version: graph.version,
     model_error_contained: modelErrorContained
   };
