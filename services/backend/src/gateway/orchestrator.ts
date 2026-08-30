@@ -152,7 +152,7 @@ export async function processIntent(intent: IntentRequest): Promise<any> {
       JSON.stringify(negotiation.proposed_action)
     );
   } catch (err: any) {
-    if (err.message.includes('UNIQUE constraint failed: actions.idempotency_key')) {
+    if (err.message.includes('UNIQUE constraint failed: actions.idempotency_key') || err.message.includes('UNIQUE constraint failed: actions.external_receipt')) {
       const existing = db.prepare('SELECT parameters_json FROM actions WHERE idempotency_key = ?').get(idempKey) as any;
       if (existing.parameters_json !== JSON.stringify(negotiation.proposed_action)) {
          tracer.recordStage('ACTION_SAVE', startAction, 'FAILURE', 'CONFLICT', 'IDEMPOTENCY_CONFLICT');
