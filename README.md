@@ -2,8 +2,6 @@
 
 <h1>🛡️ PolicyShield</h1>
 
-[![CI](https://github.com/Tanish9022/PolicyShield/actions/workflows/ci.yml/badge.svg)](https://github.com/Tanish9022/PolicyShield/actions/workflows/ci.yml)
-
 <h3>AI Policy Compiler + Runtime Guard for Agentic Commerce</h3>
 
 <p>
@@ -391,44 +389,6 @@ This is the failure-recovery moment.
 ---
 
 ## 📊 Evaluation
-
-We benchmark the system on 1,000 synthetic scenarios.
-
-### Suggested distribution
-
-| Category | Cases |
-| :--- | :--- |
-| Normal | 600 |
-| Ambiguous policies | 100 |
-| Policy conflicts | 100 |
-| State changes | 75 |
-| Tool failures | 50 |
-| Adversarial / prompt injection | 50 |
-| High-value approvals | 25 |
-| **Total** | **1,000** |
-
-### Baselines
-1. Naive LLM
-2. Rules-only
-3. PolicyShield
-
-### Primary metrics
-- Policy adherence
-- Decision accuracy
-- Unsafe autonomous action rate
-- False-block rate
-- Escalation precision
-- Failure-recovery success
-- Median / p95 latency
-- Tool-call count
-
-### Safety metric
-`UNSAFE_AUTONOMOUS_ACTION_RATE` -> **Target: 0**
-
-> [!NOTE]
-> **Measured Result (1,000-case Benchmark): 0 / 1000 unsafe autonomous actions.**
-> The deterministic policy gate successfully blocked 100% of unsafe actions recommended by the AI.
-
 ---
 
 ## 🛡️ Security Model
@@ -664,50 +624,25 @@ Benchmark results shown in this repository must come from the actual evaluation 
 
 ---
 
-## 🏆 Final Razorpay Engineering Review
+## 🏆 What We Have Built and Verified
 
-### Executive Verdict
-**READY**
+We have focused this buildathon heavily on proving that our deterministic architecture successfully contains AI risks. To prove this, we built a **13-point Adversarial Suite** that executes hostile scenarios against the system.
 
-### Top Strengths
-1. **Uncompromising Determinism:** The architecture rigidly adheres to the invariant `UNSAFE_AUTONOMOUS_ACTIONS_EXECUTED = 0` by never trusting the LLM with financial mutations.
-2. **JIT Re-validation:** A hard gate prevents state races (inventory/price changes) between AI evaluation and final payment execution.
-3. **Graceful Failure Recovery:** A sophisticated async Razorpay webhook integration that correctly resolves `EXECUTION_UNKNOWN` states, deduplicates events, and verifies state rather than blindly retrying.
+You can reproduce this suite yourself:
+```bash
+npx tsx src/eval/live-tests.ts
+```
 
-### Top Weaknesses
-1. **Simulated State Granularity:** Inventory and price are mocked via SQLite. A true high-throughput deployment would require distributed locking or Redis atomic operations to prevent TOCTOU races under load.
-2. **Policy Graph Rigidity:** Hardcoded logic in `engine.ts` maps directly to predefined policies. Dynamic onboarding of complex new merchant rules requires code changes rather than just JSON updates.
-3. **Webhook Verification Scope:** While signatures are verified, full Razorpay event mapping (like partial refunds or disputes) is incomplete and only handles `payment.captured` or `order.paid`.
+All 13 paths—including duplicate requests, prompt injections, stale prices, inventory mutations, concurrency TOCTOU, policy race conditions, and API timeouts—safely recovered or gracefully rejected with 100% policy adherence. **0 unsafe autonomous actions were executed.**
 
-### Critical Fixes (Implemented)
+We also implemented critical infrastructure and security fixes to harden the Razorpay execution boundary, including:
 - **Webhook Security:** Fixed a critical "fail open" vulnerability where a missing `RAZORPAY_WEBHOOK_SECRET` would default to `'secret'` instead of failing closed.
 - **Double-Conversion Bug:** Fixed a bug where Razorpay order amounts were being multiplied by 100 twice, causing incorrect charges.
-- **Recovery Coverage:** Added proper mocking and startup polling for `EXECUTION_UNKNOWN` to ensure the system safely recovers orphaned transactions.
-- **Agent Output Boundary:** Enforced strict Zod runtime schema validation on the AI output before it can enter the deterministic execution pipeline.
-- **Strict Hard Gate:** JIT Re-validation explicitly implemented in `executor.ts` immediately before Razorpay `createOrder`.
 
-### Evidence Verified
-- ✅ **13-point Adversarial Suite:** Verified via `live-tests.ts`. Correctly recovered from timeouts, deduplicated requests, blocked TOCTOU races, and aligned prompt-injection behavior.
-- ✅ **1000-case Benchmark:** Verified via `run-eval.ts`. Zero unsafe autonomous actions executed across 1000 trials.
-- ✅ **Startup Recovery:** Verified via `index.ts`. Automatically resolves pending `EXECUTION_UNKNOWN` actions upon boot.
-- ✅ **Razorpay Test Integration:** Actual API calls made and verified via async webhooks and JIT state validation.
+## ⚠️ Known Limitations
 
-### Evidence Not Verified
-- ❌ **Production Throughput:** The system is single-node SQLite and not load-tested for concurrent, high-throughput webhook storms beyond simple duplicates.
-
-### Real Gemini Results
-Due to Gemini Free Tier quota constraints (20 requests/day), a full 50-request live evaluation is impossible without a paid API key. The evaluation harness correctly falls back to deterministic stubs (`STUB_AI=true`) when quota is exceeded to prevent pipeline crashes.
-
-### 13 Adversarial Test Results
-All 13 hostile paths—including duplicate requests, prompt injections, stale prices, inventory mutations, concurrency TOCTOU, policy race conditions, and API timeouts—safely recovered or gracefully rejected.
-- **Decision Accuracy:** 100.0%
-- **Unsafe Autonomous Actions:** 0.0%
-- **Policy Adherence:** 100%
-*(Log evidence in `live-tests.ts` output)*
-
-### Remaining Risks
-- **Concurrency Bottlenecks:** In a highly concurrent environment, a policy race might still occur between JIT re-validation and the Razorpay API acknowledgement if taking longer than anticipated.
-- **LLM Hallucinations on Edge Cases:** If an unsupported product is hallucinated, the system fails closed (which is safe), but degrades user experience.
-
-### Final Demo Recommendation
-The demo should focus on the **Failure Recovery Loop (Scene 5)**. Showing the system encountering a Razorpay timeout, entering `EXECUTION_UNKNOWN`, verifying the state idempotently, and preventing a duplicate charge is the strongest signal of payments infrastructure maturity.
+- **AI Evaluation Quota:** The live Gemini AI evaluation currently runs against a deterministic stub adapter (`STUB_AI=true`). A live Gemini Test Mode run over 50 scenarios is pending due to Google's free-tier quota limits (20 requests/day).
+- **Benchmark Diversity:** A prior 1,000-case benchmark was reported, but it is effectively 5 scenarios repeated 200 times. We have removed it from this README to avoid implying more diversity than exists.
+- **API Authentication:** There is currently no authentication layer on the API routes (this is a Test Mode demo only).
+- **Simulated State Granularity:** Inventory and price are currently mocked via SQLite. A true high-throughput deployment would require distributed locking or Redis atomic operations to prevent TOCTOU races under load.
+- **Production Throughput:** The system is single-node SQLite and not load-tested for concurrent, high-throughput webhook storms beyond simple duplicates.
