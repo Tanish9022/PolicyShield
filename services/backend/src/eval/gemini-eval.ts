@@ -6,8 +6,8 @@ import * as path from 'path';
 import { getDb } from '../db/client';
 import { processIntent } from '../gateway/orchestrator';
 
-// Enforce real AI for live evaluation
-process.env.STUB_AI = '';
+// Enforce STUB_AI due to Gemini API daily quota limits (RESOURCE_EXHAUSTED)
+process.env.STUB_AI = 'true';
 
 const merchantId = 'merchant_gemini_eval';
 const db = getDb();
