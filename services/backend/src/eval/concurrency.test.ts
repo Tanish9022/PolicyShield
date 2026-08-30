@@ -40,4 +40,33 @@ describe('Concurrency Tests', () => {
     expect(successCount).toBe(1);
     expect(errorCount).toBe(attempts - 1);
   });
+
+  it('Test 12: Intent-level and Action-level Idempotency Enforcement', async () => {
+    const db = getDb();
+    const intentId = uuidv4() as any;
+    
+    const intent: IntentRequest = {
+      request_id: uuidv4() as any,
+      intent_id: intentId,
+      merchant_id: merchantId as any,
+      buyer_input: 'I want to buy the AirPods Pro at full price',
+      received_at: new Date().toISOString()
+    };
+
+    // 1. First processIntent should create the action
+    const result1 = await processIntent(intent);
+    expect(result1.action.state).toBe('VALIDATED');
+
+    // 2. Second processIntent with same intent_id (same idempotency_key = idemp_intentId)
+    // should yield the SAME action instead of duplicating. Enforced by DB UNIQUE constraint in processIntent.
+    const result2 = await processIntent(intent);
+    expect(result2.action.action_id).toBe(result1.action.action_id);
+
+    // 3. Mark the action as completed in DB to test execution-level idempotency
+    db.prepare("UPDATE actions SET state = 'VERIFIED_SUCCESS' WHERE action_id = ?").run(result1.action.action_id);
+
+    // 4. Executing an already executed action must throw immediately.
+    // Enforced in executor.ts at the start of executeAction().
+    await expect(executeAction(result1.action.action_id)).rejects.toThrow(/already in state VERIFIED_SUCCESS/);
+  });
 });
