@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: policyshield-api
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start --workspace=services/backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_API_URL
+        value: https://policyshield-api.onrender.com
+      - key: PORT
+        value: 3001
+      - key: STUB_AI
+        value: true
+      - key: STUB_RAZORPAY
+        value: true
+    disk:
+      name: policyshield-db
+      mountPath: /var/data
+      sizeGB: 1
+  - type: web
+    name: policyshield-frontend
+    env: static
+    buildCommand: npm install && npm run build --workspace=apps/web
+    staticPublishPath: apps/web/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://policyshield-api.onrender.com

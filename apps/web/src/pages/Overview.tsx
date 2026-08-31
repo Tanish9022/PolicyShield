@@ -20,12 +20,12 @@ export default function Overview() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/status')
+    fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/status`)
       .then(res => res.json())
       .then(data => setStatus(data))
       .catch(console.error);
 
-    fetch('http://localhost:3001/api/decisions')
+    fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/decisions`)
       .then(res => res.json())
       .then(data => setRecentDecisions(data.slice(0, 10)))
       .catch(console.error);

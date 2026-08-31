@@ -62,6 +62,14 @@ export function seedTestDatabase() {
         conditions: [],
         parameters: { threshold_amount: 50000 },
         priority: 1
+      },
+      {
+        policy_id: 'pol_3' as any,
+        rule_type: 'INVENTORY_RESERVE' as any,
+        description: 'Maintain a reserve of 2 items in inventory.',
+        conditions: [],
+        parameters: { reserve_count: 2 },
+        priority: 1
       }
     ]
   };

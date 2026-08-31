@@ -11,7 +11,7 @@ interface ChatMessage {
 }
 
 export default function AiBuyer() {
-  const [activeTab, setActiveTab] = useState<'chat' | 'live' | 'evidence'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'live' | 'context' | 'evidence'>('chat');
   
   const [input, setInput] = useState('');
   const [chatLog, setChatLog] = useState<ChatMessage[]>([]);
@@ -20,6 +20,7 @@ export default function AiBuyer() {
   
   const [activeAction, setActiveAction] = useState<any>(null);
   const [evidence, setEvidence] = useState<any>(null);
+  const [buyerMemory, setBuyerMemory] = useState<any>(null);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -37,7 +38,7 @@ export default function AiBuyer() {
     setIsProcessing(true);
     
     try {
-      const res = await fetch('http://localhost:3001/api/intent', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/intent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -89,6 +90,12 @@ export default function AiBuyer() {
         setEvidence(null);
       }
       
+      if (data.buyer_memory) {
+        setBuyerMemory(data.buyer_memory);
+      } else {
+        setBuyerMemory(null);
+      }
+      
     } catch (err) {
       console.error(err);
       setChatLog(prev => [...prev, { role: 'assistant', text: 'Error connecting to PolicyShield backend.' }]);
@@ -101,7 +108,7 @@ export default function AiBuyer() {
     setCheckoutLoading(true);
     
     try {
-      const res = await fetch(`http://localhost:3001/api/intent/${intentId}/checkout`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/intent/${intentId}/checkout`, {
         method: 'POST'
       });
       const data = await res.json();
@@ -141,7 +148,8 @@ export default function AiBuyer() {
 
       <div className="flex justify-center space-x-2">
         <button onClick={() => setActiveTab('chat')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'chat' ? 'bg-primary text-background' : 'bg-surface border border-border hover:bg-border'}`}>Buyer Chat</button>
-        <button onClick={() => setActiveTab('live')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'live' ? 'bg-primary text-background' : 'bg-surface border border-border hover:bg-border'}`}>Live Decision</button>
+        <button onClick={() => setActiveTab('live')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'live' ? 'bg-primary text-background' : 'bg-surface border border-border hover:bg-border'}`}>Execution Trace</button>
+        <button onClick={() => setActiveTab('context')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'context' ? 'bg-primary text-background' : 'bg-surface border border-border hover:bg-border'}`}>Context & Memory</button>
         <button onClick={() => setActiveTab('evidence')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'evidence' ? 'bg-primary text-background' : 'bg-surface border border-border hover:bg-border'}`}>System Evidence</button>
       </div>
 
@@ -304,6 +312,68 @@ export default function AiBuyer() {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'context' && (
+          <div className="absolute inset-0 p-6 overflow-y-auto bg-surface/50">
+            <div className="max-w-2xl mx-auto space-y-6">
+              
+              <div className="border border-blue-500/30 rounded-lg overflow-hidden bg-blue-500/5">
+                <div className="bg-blue-500/10 px-4 py-3 border-b border-blue-500/20 flex items-center">
+                  <User size={18} className="text-blue-500 mr-2" />
+                  <h3 className="font-semibold text-blue-400 font-mono text-sm uppercase">Buyer Memory (Context)</h3>
+                </div>
+                <div className="p-4">
+                  {!buyerMemory ? (
+                    <div className="text-sm text-text-muted italic">No memory found for this user.</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {Object.entries(buyerMemory.preferences || {}).length === 0 ? (
+                        <div className="text-sm text-text-muted italic">No explicit preferences extracted yet.</div>
+                      ) : (
+                        <ul className="space-y-2">
+                          {Object.entries(buyerMemory.preferences).map(([key, val]) => (
+                            <li key={key} className="flex items-center text-sm">
+                              <CheckCircle size={14} className="text-blue-400 mr-2 shrink-0" />
+                              <span className="font-mono text-text-muted mr-2">{key}:</span>
+                              <span className="font-medium">{String(val)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <div className="text-xs font-mono text-text-muted/60 pt-2 border-t border-blue-500/10 mt-2">
+                        Last Updated: {buyerMemory.last_updated} | v{buyerMemory.memory_version}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="border border-emerald-500/30 rounded-lg overflow-hidden bg-emerald-500/5">
+                <div className="bg-emerald-500/10 px-4 py-3 border-b border-emerald-500/20 flex items-center">
+                  <Database size={18} className="text-emerald-500 mr-2" />
+                  <h3 className="font-semibold text-emerald-400 font-mono text-sm uppercase">Current Commerce (Authority)</h3>
+                </div>
+                <div className="p-4">
+                  {!evidence?.policy_version ? (
+                    <div className="text-sm text-text-muted italic">Awaiting transaction...</div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <span className="font-mono text-xs text-text-muted block mb-1">POLICY VERSION</span>
+                        <div className="text-sm font-medium">{evidence.policy_version}</div>
+                      </div>
+                      <div>
+                        <span className="font-mono text-xs text-text-muted block mb-1">GATE DECISION</span>
+                        <div className="text-sm font-medium text-emerald-400">{evidence.gate_decision}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+            </div>
           </div>
         )}
 

@@ -29,9 +29,10 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 app.use((req, res, next) => {
   if (req.path === '/api/webhooks/razorpay') {
     // Preserve raw body for Razorpay signature verification
-    express.raw({ type: 'application/json' })(req, res, next);
+    express.raw({ type: 'application/json', limit: '1mb' })(req, res, next);
   } else {
-    express.json()(req, res, next);
+    // Strict body limit for application security
+    express.json({ limit: '10kb' })(req, res, next);
   }
 });
 
@@ -68,7 +69,8 @@ app.get('/api/status', (_req, res) => {
   const unknown = db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'EXECUTION_UNKNOWN'").get() as { count: number };
   
   // Unsafe mutations invariant
-  const unsafe = 0; // We enforce this in the policy gate. If it happened, we'd have a catastrophic failure state.
+  const unsafeRow = db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'VERIFIED_SUCCESS' AND decision != 'APPROVE'").get() as { count: number };
+  const unsafe = unsafeRow.count;
 
   res.json({
     policies: policyCount.count,

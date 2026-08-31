@@ -7,7 +7,7 @@ export default function AuditLedger() {
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/audit')
+    fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/audit`)
       .then(res => res.json())
       .then(data => setEvents(data))
       .catch(console.error);

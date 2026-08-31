@@ -6,7 +6,7 @@ export default function Evaluation() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/eval/metrics')
+    fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/eval/metrics`)
       .then(r => r.json())
       .then(data => {
         setMetrics(data);

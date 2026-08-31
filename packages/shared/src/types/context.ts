@@ -50,8 +50,18 @@ export interface ShippingOption {
   eligible_warehouse_ids: string[];
 }
 
+export interface BuyerMemory {
+  customer_id: string;
+  preferences: Record<string, any>;
+  negotiation_history: any[];
+  last_updated: string;
+  memory_version: number;
+}
+
 /** The full authoritative context assembled by the Context Engine */
 export interface CommerceContext {
+  /** Explicit buyer memory / historical preferences */
+  buyer_memory?: BuyerMemory;
   /** Products matching the buyer's query */
   products: Product[];
   /** Current inventory for matched products */

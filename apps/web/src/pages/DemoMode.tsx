@@ -38,7 +38,7 @@ export default function DemoMode() {
     setCheckoutResult(null);
     
     try {
-      const res = await fetch('http://localhost:3001/api/intent', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/intent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -63,7 +63,7 @@ export default function DemoMode() {
     setCheckoutLoading(true);
     
     try {
-      const res = await fetch(`http://localhost:3001/api/intent/${result.agent_run.intent_id}/checkout`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/intent/${result.agent_run.intent_id}/checkout`, {
         method: 'POST'
       });
       const data = await res.json();

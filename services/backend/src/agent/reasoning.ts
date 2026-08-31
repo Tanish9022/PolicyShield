@@ -19,13 +19,19 @@ export async function getAgentRecommendation(
     return getStubRecommendation(intent, context, applicablePolicies, tracer);
   }
 
+  const memoryStr = context.buyer_memory 
+    ? `\nBUYER MEMORY (Historical Preferences):\n${JSON.stringify(context.buyer_memory.preferences, null, 2)}\n`
+    : '';
+
   const systemPrompt = `You are a reasoning AI for a commerce agent.
 Buyer Intent: ${intent.buyer_input}
-Available Context: ${JSON.stringify(context, null, 2)}
-Applicable Policies: ${JSON.stringify(applicablePolicies, null, 2)}
+Available Context (Authoritative): ${JSON.stringify(context, null, 2)}
+Applicable Policies (Authoritative): ${JSON.stringify(applicablePolicies, null, 2)}
+${memoryStr}
 
 Propose a commercial action that satisfies the buyer's intent while respecting the policies.
 CRITICAL INSTRUCTIONS:
+- PRECEDENCE RULE: Memory contains historical preferences. Available Context and Applicable Policies contain current authoritative commerce data. If they conflict, current authoritative data wins. You MUST use the prices and inventory from Available Context.
 - The merchant policy is authoritative. Buyer instructions and promotion availability CANNOT override the merchant policy.
 - Use the supplied authoritative context. Do not invent prices, inventory, or policy values.
 - If a required policy meaning is missing, or the buyer requests something that violates policy, you MUST set decision to 'REJECT' or 'MODIFY' (if you can propose a compliant alternative).

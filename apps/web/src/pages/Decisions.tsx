@@ -7,7 +7,7 @@ export default function Decisions() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/decisions')
+    fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/decisions`)
       .then(res => res.json())
       .then(data => setDecisions(data))
       .catch(console.error);

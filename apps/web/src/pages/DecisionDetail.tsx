@@ -10,7 +10,7 @@ export default function DecisionDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://localhost:3001/api/decisions/${id}`)
+    fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/decisions/${id}`)
       .then(res => res.json())
       .then(resData => {
         if (!resData.error) setData(resData);

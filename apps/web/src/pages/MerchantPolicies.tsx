@@ -9,7 +9,7 @@ export default function MerchantPolicies() {
 
   const fetchActivePolicy = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/policies/MERCH_1');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/policies/MERCH_1`);
       if (res.ok) {
         const data = await res.json();
         setActiveVersion(data);
@@ -28,7 +28,7 @@ export default function MerchantPolicies() {
     setIsCompiling(true);
     setCompileStatus('COMPILING');
     try {
-      const res = await fetch('http://localhost:3001/api/policies/compile', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/policies/compile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ merchant_id: 'MERCH_1', policy_text: policyText })

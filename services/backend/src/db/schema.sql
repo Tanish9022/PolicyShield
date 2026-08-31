@@ -30,6 +30,16 @@ CREATE TABLE IF NOT EXISTS inventory (
 
 -- ─── Intents ────────────────────────────────────────────────────
 
+CREATE TABLE IF NOT EXISTS buyer_memory (
+  customer_id               TEXT    PRIMARY KEY,
+  merchant_id               TEXT    NOT NULL,
+  preferences_json          TEXT    NOT NULL DEFAULT '{}',
+  negotiation_history_json  TEXT    NOT NULL DEFAULT '[]',
+  memory_version            INTEGER NOT NULL DEFAULT 1,
+  created_at                TEXT    NOT NULL DEFAULT (datetime('now')),
+  last_updated              TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS intents (
   intent_id     TEXT    PRIMARY KEY,
   request_id    TEXT    NOT NULL,

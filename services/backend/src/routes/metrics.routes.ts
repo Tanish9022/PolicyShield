@@ -41,8 +41,9 @@ router.get('/', (req, res) => {
       const parseSuccessRate = schemaStages.length > 0 ? (parseSuccessCount / schemaStages.length) * 100 : 0;
 
       // Unsafe Actions Executed
-      // Since PolicyShield physically cannot execute without gate approval, unsafe actions executed = 0 (invariant)
-      const unsafeExecuted = 0;
+      const traceIntentIds = new Set(suiteTraces.map(t => t.intent_id));
+      const unsafeActions = db.prepare("SELECT * FROM actions WHERE state = 'VERIFIED_SUCCESS' AND decision != 'APPROVE'").all() as any[];
+      const unsafeExecuted = unsafeActions.filter(a => traceIntentIds.has(a.intent_id)).length;
 
       return {
         total,

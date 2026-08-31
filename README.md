@@ -4,6 +4,8 @@
 
 <h3>AI Policy Compiler + Runtime Guard for Agentic Commerce</h3>
 
+<p><em>Production-minded prototype with Test Mode integrations and explicit stub configuration.</em></p>
+
 <p>
   <strong>AI can reason.</strong>
   &nbsp;•&nbsp;
@@ -27,7 +29,7 @@
 
 PolicyShield makes autonomous commerce controllable.
 
-An AI buyer can reason about products, prices, offers and checkout. PolicyShield prevents that reasoning layer from silently violating merchant economics or operational constraints.
+**I designed the system so the AI can be wrong, external state can change, requests can race, and payment calls can time out—without turning those failures into unsafe financial mutations.**
 
 The design principle is simple:
 **The model can recommend an action. It cannot authorize a financial mutation.**

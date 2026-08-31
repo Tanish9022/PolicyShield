@@ -1,5 +1,6 @@
 import { IntentRequest, ActionRecord, AuditEventType } from '@policyshield/shared';
 import { getCommerceContext } from '../context-engine/engine';
+import { extractAndPersistExplicitPreferences } from '../agent/memory';
 import { getPolicies } from '../policy-graph/graph';
 import { resolveApplicablePolicies } from '../policy-graph/resolver';
 import { getAgentRecommendation } from '../agent/reasoning';
@@ -32,16 +33,21 @@ export async function processIntent(intent: IntentRequest): Promise<any> {
   const db = getDb();
   
   const startAuditIntent = performance.now();
+  
+  // Extract and persist any explicit memory from the user intent
+  extractAndPersistExplicitPreferences(db, intent);
+  
   db.prepare(`
-    INSERT INTO intents (intent_id, request_id, merchant_id, buyer_input, received_at)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO intents (intent_id, request_id, merchant_id, buyer_input, customer_id, received_at)
+    VALUES (?, ?, ?, ?, ?, ?)
     ON CONFLICT DO NOTHING
   `).run(
     intent.intent_id,
     intent.request_id,
     intent.merchant_id,
     intent.buyer_input,
-    intent.received_at
+    intent.customer_id || null,
+    intent.received_at || new Date().toISOString()
   );
   logAudit({ event_type: AuditEventType.INTENT_RECEIVED, intent_id: intent.intent_id });
   tracer.recordStage('REQUEST', startAuditIntent, 'SUCCESS');
@@ -102,11 +108,12 @@ export async function processIntent(intent: IntentRequest): Promise<any> {
   let gateResult = validateRecommendation(agentOutputMock, applicablePolicies, context);
   tracer.recordStage('POLICY_GATE', startGate, 'SUCCESS', gateResult.decision);
 
+  const MAX_NEGOTIATION_ATTEMPTS = 3;
   let adaptationCount = 0;
   let modelErrorContained = false;
 
   // 7. Adaptation Loop
-  while (gateResult.decision === 'REJECT' && adaptationCount < 3) {
+  while (gateResult.decision === 'REJECT' && adaptationCount < MAX_NEGOTIATION_ATTEMPTS) {
     modelErrorContained = true;
     adaptationCount++;
     db.prepare(`UPDATE agent_runs SET state = 'POLICY_REJECTED', current_step = 'ADAPTATION', adaptation_count = ? WHERE agent_run_id = ?`).run(adaptationCount, agentRunId);
@@ -192,7 +199,7 @@ export async function processIntent(intent: IntentRequest): Promise<any> {
     reasons: gateResult.reasons,
     discount_metadata: gateResult.metadata,
     razorpay_invoked: false, // NOT INVOKED YET
-    recommendation: { proposed_action: negotiation.proposed_action, explanation: negotiation.explanation },
+    recommendation: { proposed_action: negotiation.proposed_action, explanation: negotiation.reasoning },
     policy_version: graph.version,
     model_error_contained: modelErrorContained
   };
@@ -218,7 +225,8 @@ export async function processIntent(intent: IntentRequest): Promise<any> {
     reasons: gateResult.reasons,
     agent_run: agentRun,
     candidates: candidates,
-    action: finalAction
+    action: finalAction,
+    buyer_memory: context.buyer_memory
   };
 }
 
