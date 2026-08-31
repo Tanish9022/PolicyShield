@@ -20,7 +20,7 @@ jobs:
         run: npm ci
 
       - name: Run 1,000-case Eval
-        run: npx tsx services/backend/src/eval/run-eval.ts > benchmark-report.txt
+        run: npx tsx services/backend/src/eval/benchmark.ts > benchmark-report.txt
 
       - name: Upload Report
         uses: actions/upload-artifact@v4
