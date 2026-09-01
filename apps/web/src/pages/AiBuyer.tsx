@@ -349,13 +349,13 @@ export default function AiBuyer() {
           </div>
 
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 min-h-0">
-            {chat.length === 0 ? (
+            {chat?.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center gap-3 text-white/20">
                 <Bot size={32} strokeWidth={1.5} />
                 <span className="text-base">Send an intent to begin</span>
               </div>
             ) : (
-              chat.map((msg, i) => (
+              chat?.map((msg, i) => (
                 <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   {msg.role === 'agent' && (
                     <div className="w-7 h-7 rounded-full bg-indigo-500/15 border border-indigo-500/20 flex items-center justify-center shrink-0 mt-0.5">
@@ -500,13 +500,13 @@ export default function AiBuyer() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 space-y-1.5 min-h-0">
-            {events.length === 0 ? (
+            {events?.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center gap-2 text-white/15">
                 <Zap size={24} strokeWidth={1.5} />
                 <span className="text-[12px] font-code">Awaiting events...</span>
               </div>
             ) : (
-              events.map(evt => <EventRow key={evt.sequence} evt={evt} />)
+              events?.map(evt => <EventRow key={evt.sequence} evt={evt} />)
             )}
             <div ref={eventsEndRef} />
           </div>
@@ -558,7 +558,7 @@ export default function AiBuyer() {
                 {runState.candidates?.length > 0 && (
                   <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-3 space-y-2">
                     <div className="text-[10px] font-semibold text-emerald-400/60 uppercase tracking-widest">Candidates</div>
-                    {runState.candidates.map((c: any, i: number) => (
+                    {runState.candidates?.map((c: any, i: number) => (
                       <div key={i} className="flex items-center justify-between">
                         <span className="text-white/60 truncate mr-2">{c.name}</span>
                         <span className="font-code text-emerald-300 shrink-0">
@@ -583,7 +583,7 @@ export default function AiBuyer() {
                 {runState.action?.reason_codes?.length > 0 && (
                   <div className="bg-rose-500/5 border border-rose-500/10 rounded-xl p-3 space-y-1.5">
                     <div className="text-[10px] font-semibold text-rose-400/60 uppercase tracking-widest">Policy Violations</div>
-                    {runState.action.reason_codes.map((r: string, i: number) => (
+                    {runState.action.reason_codes?.map((r: string, i: number) => (
                       <div key={i} className="flex items-center gap-2">
                         <AlertTriangle size={11} className="text-rose-400/60 shrink-0" />
                         <span className="font-code text-rose-300/70">{r}</span>
@@ -612,7 +612,7 @@ export default function AiBuyer() {
                     {Object.entries(runState.buyer_memory.preferences || {}).length === 0 ? (
                       <span className="text-white/25 font-code">No preferences stored</span>
                     ) : (
-                      Object.entries(runState.buyer_memory.preferences).map(([k, v]) => (
+                      Object.entries(runState.buyer_memory.preferences || {})?.map(([k, v]) => (
                         <div key={k} className="flex items-center justify-between gap-2">
                           <span className="text-white/30 font-code truncate">{k}</span>
                           <span className="text-purple-300/70 font-code text-[10px]">{String(v)}</span>

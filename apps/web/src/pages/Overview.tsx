@@ -130,7 +130,7 @@ export default function Overview() {
                   </td>
                 </tr>
               ) : (
-                recentDecisions.map((d) => (
+                recentDecisions?.map((d) => (
                   <tr 
                     key={d.action_id} 
                     className="hover:bg-surface/80 cursor-pointer transition-colors"
