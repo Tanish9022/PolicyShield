@@ -21,7 +21,7 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
   const db = getDb();
   
   // 1. Fetch action
-  const action = db.prepare('SELECT * FROM actions WHERE action_id = ?').get(actionId) as any;
+  const action = await db.prepare('SELECT * FROM actions WHERE action_id = ?').get(actionId) as any;
   if (!action) throw new Error('Action not found');
   if (action.decision !== 'APPROVE') throw new Error('Action was not approved by policy gate');
   if (action.state !== 'VALIDATED' && action.state !== 'RETRY_ELIGIBLE') {
@@ -30,7 +30,7 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
 
   // JIT Re-validation
   const startJit = performance.now();
-  const intentRow = db.prepare('SELECT * FROM intents WHERE intent_id = ?').get(action.intent_id) as any;
+  const intentRow = await db.prepare('SELECT * FROM intents WHERE intent_id = ?').get(action.intent_id) as any;
   const intent = {
     request_id: intentRow.request_id,
     intent_id: intentRow.intent_id,
@@ -45,11 +45,11 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
   const { validateRecommendation } = await import('../policy-gate/validator');
 
   const context = await getCommerceContext(intent);
-  const graph = getPolicies(action.merchant_id);
+  const graph = await getPolicies(action.merchant_id);
   if (!graph) throw new Error('Policies not found for JIT validation');
 
   if (graph.version !== action.policy_version) {
-    db.prepare('UPDATE actions SET state = ?, decision = ?, updated_at = ? WHERE action_id = ?').run(
+    await db.prepare('UPDATE actions SET state = ?, decision = ?, updated_at = ? WHERE action_id = ?').run(
       'BLOCKED', 'REJECT', new Date().toISOString(), actionId
     );
     if (tracer) tracer.recordStage('JIT', startJit, 'FAILURE', 'REJECT', 'POLICY_RACE');
@@ -61,7 +61,7 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
   
   const gateResult = validateRecommendation({ proposed_action: parameters } as any, applicablePolicies, context);
   if (gateResult.decision !== 'APPROVE') {
-     db.prepare('UPDATE actions SET state = ?, decision = ?, updated_at = ? WHERE action_id = ?').run(
+     await db.prepare('UPDATE actions SET state = ?, decision = ?, updated_at = ? WHERE action_id = ?').run(
       'BLOCKED', gateResult.decision, new Date().toISOString(), actionId
     );
     if (tracer) tracer.recordStage('JIT', startJit, 'FAILURE', gateResult.decision, 'INVENTORY_RACE');
@@ -79,11 +79,11 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
   if (tracer) tracer.recordStage('IDEMPOTENCY', startIdempotency, 'SUCCESS');
 
   // 2. Transition to EXECUTING atomically to prevent concurrent executions
-  const updateResult = db.prepare(
+  const updateResult = await db.prepare(
     "UPDATE actions SET state = 'EXECUTING', updated_at = ? WHERE action_id = ? AND state IN ('VALIDATED', 'RETRY_ELIGIBLE')"
   ).run(new Date().toISOString(), actionId);
   
-  if (updateResult.changes === 0) {
+  if ((updateResult as any).rowCount === 0) {
     throw new Error(`Concurrent execution detected or invalid state for action ${actionId}`);
   }
 
@@ -116,12 +116,12 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
       
       const startVerification = performance.now();
       // Update with Razorpay Order ID
-      db.prepare('UPDATE actions SET razorpay_order_id = ? WHERE action_id = ?').run(order.id, actionId);
+      await db.prepare('UPDATE actions SET razorpay_order_id = ? WHERE action_id = ?').run(order.id, actionId);
       result = order;
       if (tracer) tracer.recordStage('VERIFICATION', startVerification, 'SUCCESS');
 
       // 3. Success -> VERIFIED_SUCCESS
-      db.prepare('UPDATE actions SET state = ?, updated_at = ? WHERE action_id = ?').run(
+      await db.prepare('UPDATE actions SET state = ?, updated_at = ? WHERE action_id = ?').run(
         'VERIFIED_SUCCESS', new Date().toISOString(), actionId
       );
     }
@@ -133,7 +133,7 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
     // If we can't be sure it failed, it's UNKNOWN.
     console.error(`[EXECUTION_UNKNOWN] action_id=${actionId} error=${err.message}`);
     
-    db.prepare('UPDATE actions SET state = ?, updated_at = ? WHERE action_id = ?').run(
+    await db.prepare('UPDATE actions SET state = ?, updated_at = ? WHERE action_id = ?').run(
       'EXECUTION_UNKNOWN', new Date().toISOString(), actionId
     );
 

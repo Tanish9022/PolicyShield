@@ -44,7 +44,7 @@ async function run() {
     console.log(`[RES] Recovery completed in ${(end - start).toFixed(2)}ms`);
     console.log("Result:", JSON.stringify(result, null, 2));
 
-    const actionRow = db.prepare('SELECT state, razorpay_order_id FROM actions WHERE action_id = ?').get(actionId) as any;
+    const actionRow = await db.prepare('SELECT state, razorpay_order_id FROM actions WHERE action_id = ?').get(actionId) as any;
     if (actionRow.state === 'VERIFIED_SUCCESS' && actionRow.razorpay_order_id === order.id) {
       console.log("=== TEST CASE 1 SUCCESS ===");
     } else {
@@ -84,7 +84,7 @@ async function run() {
     
     for (let i = 0; i < maxRetries; i++) {
        console.log(`Triggering resolveUnknownExecution() - Attempt ${i+1}...`);
-       db.prepare(`UPDATE actions SET state = 'EXECUTION_UNKNOWN' WHERE action_id = ?`).run(actionId);
+       await db.prepare(`UPDATE actions SET state = 'EXECUTION_UNKNOWN' WHERE action_id = ?`).run(actionId);
        
        const start = performance.now();
        result = await resolveUnknownExecution(intentId);
@@ -99,7 +99,7 @@ async function run() {
 
     console.log("Result:", JSON.stringify(result, null, 2));
 
-    const actionRow = db.prepare('SELECT state, razorpay_order_id FROM actions WHERE action_id = ?').get(actionId) as any;
+    const actionRow = await db.prepare('SELECT state, razorpay_order_id FROM actions WHERE action_id = ?').get(actionId) as any;
     if (actionRow.state === 'VERIFIED_SUCCESS' && actionRow.razorpay_order_id === order.id) {
       console.log("=== TEST CASE 2 SUCCESS ===");
       console.log("=== ALL RECOVERY TESTS COMPLETED SUCCESSFULLY ===");

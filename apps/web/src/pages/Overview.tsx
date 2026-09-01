@@ -37,15 +37,15 @@ export default function Overview() {
       {/* Header section */}
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-4xl font-display font-semibold tracking-tight">PolicyShield</h1>
-          <h2 className="text-xl text-text-muted mt-2 font-light">Autonomous commerce, under deterministic control.</h2>
-          <p className="text-sm text-text-muted mt-4 font-mono max-w-2xl leading-relaxed">
+          <h1 className="text-5xl font-display font-semibold tracking-tight">PolicyShield</h1>
+          <h2 className="text-2xl text-text-muted mt-2 font-light">Autonomous commerce, under deterministic control.</h2>
+          <p className="text-base text-text-muted mt-4 font-mono max-w-2xl leading-relaxed">
             AI can reason. <br/>
             Merchants define the rules. <br/>
             Deterministic systems enforce them.
           </p>
         </div>
-        <div className="bg-surface/50 border border-border p-4 rounded-lg flex space-x-8 text-sm">
+        <div className="bg-surface/50 border border-border p-4 rounded-lg flex space-x-8 text-base">
            <div className="flex flex-col space-y-1">
              <span className="text-text-muted">Policy Engine</span>
              <div className="flex items-center space-x-2"><div className="w-2 h-2 rounded-full bg-emerald-500"></div><span className="font-medium text-emerald-400">Active v12</span></div>
@@ -96,13 +96,13 @@ export default function Overview() {
       {/* Decision Control Plane Visual */}
       <div className="border border-border rounded-xl bg-surface/30 p-8 overflow-hidden relative">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
-        <h3 className="text-xl font-display font-medium mb-6">Decision Control Plane</h3>
+        <h3 className="text-2xl font-display font-medium mb-6">Decision Control Plane</h3>
         
         <div className="flex justify-between items-center px-4">
            {['Buyer Intent', 'Context', 'Policy Graph', 'Gemini', 'Policy Gate', 'JIT Validation', 'Razorpay', 'Verification'].map((step, idx) => (
              <div key={idx} className="flex flex-col items-center">
                 <div className={`w-3 h-3 rounded-full mb-3 ${idx === 4 ? 'bg-primary shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'bg-border'}`}></div>
-                <span className={`text-xs font-mono text-center max-w-[80px] ${idx === 4 ? 'text-primary' : 'text-text-muted'}`}>{step}</span>
+                <span className={`text-sm font-mono text-center max-w-[80px] ${idx === 4 ? 'text-primary' : 'text-text-muted'}`}>{step}</span>
              </div>
            ))}
         </div>
@@ -110,9 +110,9 @@ export default function Overview() {
 
       {/* Recent Decisions Table */}
       <div>
-        <h3 className="text-xl font-display font-medium mb-4">Recent Decisions</h3>
+        <h3 className="text-2xl font-display font-medium mb-4">Recent Decisions</h3>
         <div className="border border-border rounded-lg overflow-hidden bg-surface/30">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-base">
             <thead className="bg-surface/50 border-b border-border text-text-muted">
               <tr>
                 <th className="px-6 py-3 font-medium">Time</th>
@@ -142,7 +142,7 @@ export default function Overview() {
                     <td className="px-6 py-4 max-w-[200px] truncate" title={d.buyer_input}>
                       {d.buyer_input}
                     </td>
-                    <td className="px-6 py-4 font-mono text-xs">
+                    <td className="px-6 py-4 font-mono text-sm">
                       {d.action_type}
                     </td>
                     <td className="px-6 py-4">

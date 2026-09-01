@@ -8,10 +8,10 @@ const router = Router();
 router.use(requireAuth);
 router.use(rateLimit);
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const db = getDb();
   try {
-    const actions = db.prepare(`
+    const actions = await db.prepare(`
       SELECT 
         a.action_id, a.state, a.decision, a.action_type, a.created_at, a.updated_at, a.intent_id,
         i.buyer_input, i.merchant_id
@@ -27,10 +27,10 @@ router.get('/', (req, res) => {
   }
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   const db = getDb();
   try {
-    const action = db.prepare(`
+    const action = await db.prepare(`
       SELECT 
         a.*, 
         i.buyer_input, i.request_id, i.customer_id
@@ -43,7 +43,7 @@ router.get('/:id', (req, res) => {
       return res.status(404).json({ error: 'Action not found or unauthorized', request_id: req.headers['x-request-id'] });
     }
 
-    const auditEvents = db.prepare(`
+    const auditEvents = await db.prepare(`
       SELECT * FROM audit_events 
       WHERE action_id = ? OR intent_id = ?
       ORDER BY timestamp ASC

@@ -1,415 +1,630 @@
-import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Cpu, ShieldAlert, Server, Database, CreditCard, Clock, CheckCircle } from 'lucide-react';
-import { StatusBadge } from '../components/StatusBadge';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import {
+  Send, Bot, User, Shield, CheckCircle, CreditCard,
+  Zap, AlertTriangle, ChevronRight
+} from 'lucide-react';
 
-interface ChatMessage {
-  role: 'user' | 'assistant';
+// ─── Constants ───────────────────────────────────────────────────
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const MERCHANT_ID = 'merchant_1';
+const CUSTOMER_ID = 'cust_demo';
+
+const HEADERS: Record<string, string> = {
+  'Content-Type': 'application/json',
+  'x-merchant-id': MERCHANT_ID,
+  'x-customer-id': CUSTOMER_ID,
+};
+
+// ─── Types ───────────────────────────────────────────────────────
+interface ChatMsg {
+  role: 'user' | 'agent';
   text: string;
-  action_state?: string;
-  intent_id?: string;
-  razorpay_order_id?: string;
+  runId?: string;
+  intentId?: string;
+  ts: number;
 }
 
-export default function AiBuyer() {
-  const [activeTab, setActiveTab] = useState<'chat' | 'live' | 'context' | 'evidence'>('chat');
-  
-  const [input, setInput] = useState('');
-  const [chatLog, setChatLog] = useState<ChatMessage[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  
-  const [activeAction, setActiveAction] = useState<any>(null);
-  const [evidence, setEvidence] = useState<any>(null);
-  const [buyerMemory, setBuyerMemory] = useState<any>(null);
-  
-  const chatEndRef = useRef<HTMLDivElement>(null);
+interface AgentEvent {
+  sequence: number;
+  event: string;
+  payload: any;
+  timestamp: string;
+}
 
-  useEffect(() => {
-    if (activeTab === 'chat') {
-      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [chatLog, activeTab]);
+interface RunState {
+  run_id: string;
+  intent_id: string;
+  state: string;
+  current_step: string;
+  adaptation_count: number;
+  last_event_sequence: number;
+  candidates: any[];
+  proposal: any;
+  buyer_memory: any;
+  action: any | null;
+  policy_version: string;
+}
 
-  const submitIntent = async (text: string) => {
-    if (!text.trim() || isProcessing || checkoutLoading) return;
-    
-    setInput('');
-    setChatLog(prev => [...prev, { role: 'user', text }]);
-    setIsProcessing(true);
-    
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/intent`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          merchant_id: 'merchant_1',
-          buyer_input: text,
-          customer_id: 'cust_demo'
-        })
-      });
-      
-      const data = await res.json();
-      
-      let explanation = "I have processed your request.";
-      if (data.action?.evidence_json) {
-        try {
-          const ev = JSON.parse(data.action.evidence_json);
-          if (ev.recommendation?.explanation) {
-            explanation = ev.recommendation.explanation;
-          }
-        } catch (e) {
-          // ignore parsing error
-        }
-      }
+// ─── Event colour palette ─────────────────────────────────────────
+const EVENT_META: Record<string, { color: string; dot: string; label: string }> = {
+  INTENT_RECEIVED:   { color: 'text-blue-300',   dot: '#93C5FD', label: 'Intent Received' },
+  DISCOVER:          { color: 'text-violet-300',  dot: '#C4B5FD', label: 'Discovery' },
+  COMPARE:           { color: 'text-violet-300',  dot: '#C4B5FD', label: 'Comparison' },
+  PROPOSE:           { color: 'text-yellow-300',  dot: '#FDE68A', label: 'LLM Proposal' },
+  POLICY_REJECT:     { color: 'text-rose-300',    dot: '#FCA5A5', label: 'Policy Reject' },
+  ADAPT:             { color: 'text-orange-300',  dot: '#FDBA74', label: 'Adaptation' },
+  POLICY_APPROVE:    { color: 'text-emerald-300', dot: '#6EE7B7', label: 'Policy Approve ✓' },
+  JIT_VALIDATE:      { color: 'text-teal-300',    dot: '#5EEAD4', label: 'JIT Validate' },
+  JIT_FAILED:        { color: 'text-rose-300',    dot: '#FCA5A5', label: 'JIT Failed' },
+  PAYMENT_CREATE:    { color: 'text-indigo-300',  dot: '#A5B4FC', label: 'Payment Create' },
+  PAYMENT_FAILED:    { color: 'text-rose-400',    dot: '#F87171', label: 'Payment Failed' },
+  VERIFIED_SUCCESS:  { color: 'text-emerald-300', dot: '#6EE7B7', label: 'Verified ✓' },
+  VERIFIED_FAILURE:  { color: 'text-rose-300',    dot: '#FCA5A5', label: 'Verified Failed' },
+  EXECUTION_UNKNOWN: { color: 'text-amber-300',   dot: '#FCD34D', label: 'Awaiting Webhook' },
+  PAYMENT_VERIFY:    { color: 'text-teal-300',    dot: '#5EEAD4', label: 'Verifying' },
+};
 
-      let responseText = `"${explanation}"`;
-      
-      if (data.gate_decision === 'BLOCK') {
-        let reasons = "";
-        if (data.action?.reason_codes_json) {
-          try {
-             reasons = " (" + JSON.parse(data.action.reason_codes_json).join(', ') + ")";
-          } catch (e) {}
-        }
-        responseText = `I'm sorry, I cannot fulfill that request due to store policy.${reasons}\n\nAgent reasoning: ${explanation}`;
-      }
+// ─── Helpers ──────────────────────────────────────────────────────
+function getEventMeta(event: string) {
+  return EVENT_META[event] ?? { color: 'text-white/50', dot: '#6B7280', label: event };
+}
 
-      setChatLog(prev => [...prev, { 
-        role: 'assistant', 
-        text: responseText,
-        action_state: data.action?.state,
-        intent_id: data.action?.intent_id,
-        razorpay_order_id: data.action?.razorpay_order_id
-      }]);
-      
-      setActiveAction(data.action);
-      
-      if (data.action?.evidence_json) {
-        setEvidence(JSON.parse(data.action.evidence_json));
-      } else {
-        setEvidence(null);
-      }
-      
-      if (data.buyer_memory) {
-        setBuyerMemory(data.buyer_memory);
-      } else {
-        setBuyerMemory(null);
-      }
-      
-    } catch (err) {
-      console.error(err);
-      setChatLog(prev => [...prev, { role: 'assistant', text: 'Error connecting to PolicyShield backend.' }]);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+function StateChip({ state }: { state: string }) {
+  const s = state.toLowerCase();
+  const isGood = ['completed', 'verified_success', 'ready_for_checkout'].some(x => s.includes(x));
+  const isBad  = ['failed', 'blocked'].some(x => s.includes(x));
+  const isBusy = !isGood && !isBad;
 
-  const handleCheckout = async (intentId: string, messageIndex: number) => {
-    setCheckoutLoading(true);
-    
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/intent/${intentId}/checkout`, {
-        method: 'POST'
-      });
-      const data = await res.json();
-      
-      setChatLog(prev => {
-        const newLog = [...prev];
-        newLog[messageIndex] = {
-          ...newLog[messageIndex],
-          action_state: data.state,
-          razorpay_order_id: data.razorpay_order_id
-        };
-        return newLog;
-      });
-      
-      if (activeAction?.intent_id === intentId) {
-        setActiveAction((prev: any) => ({
-          ...prev,
-          state: data.state,
-          razorpay_order_id: data.razorpay_order_id
-        }));
-      }
-      
-    } catch (err) {
-      console.error(err);
-      alert('Error connecting to backend for checkout');
-    } finally {
-      setCheckoutLoading(false);
-    }
-  };
+  const cls = isGood
+    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+    : isBad
+    ? 'bg-rose-500/10 text-rose-300 border-rose-500/20'
+    : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20';
 
   return (
-    <div className="h-full flex flex-col space-y-4 animate-in fade-in duration-500 max-w-4xl mx-auto w-full pb-10">
-      <div className="shrink-0 text-center py-6">
-        <h1 className="text-3xl font-display font-semibold">AI Buyer Simulator</h1>
-        <p className="text-text-muted mt-1">Interact with the autonomous buyer agent.</p>
-      </div>
+    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border ${cls}`}>
+      <span
+        className={`w-1.5 h-1.5 rounded-full ${isBusy ? 'pulse-live' : ''}`}
+        style={{
+          background: isGood ? '#34d399' : isBad ? '#f87171' : '#818cf8',
+          boxShadow: isGood ? '0 0 4px #34d399' : isBad ? '0 0 4px #f87171' : '0 0 4px #818cf8'
+        }}
+      />
+      {state}
+    </span>
+  );
+}
 
-      <div className="flex justify-center space-x-2">
-        <button onClick={() => setActiveTab('chat')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'chat' ? 'bg-primary text-background' : 'bg-surface border border-border hover:bg-border'}`}>Buyer Chat</button>
-        <button onClick={() => setActiveTab('live')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'live' ? 'bg-primary text-background' : 'bg-surface border border-border hover:bg-border'}`}>Execution Trace</button>
-        <button onClick={() => setActiveTab('context')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'context' ? 'bg-primary text-background' : 'bg-surface border border-border hover:bg-border'}`}>Context & Memory</button>
-        <button onClick={() => setActiveTab('evidence')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === 'evidence' ? 'bg-primary text-background' : 'bg-surface border border-border hover:bg-border'}`}>System Evidence</button>
-      </div>
+function Spinner() {
+  return (
+    <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.2" />
+      <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
 
-      <div className="flex-1 flex flex-col border border-border rounded-lg bg-surface/30 overflow-hidden shadow-lg relative min-h-[500px]">
-        {activeTab === 'chat' && (
-          <div className="absolute inset-0 flex flex-col">
-            <div className="flex-1 p-6 overflow-y-auto space-y-6">
-              {chatLog.length === 0 && (
-                <div className="h-full flex items-center justify-center text-text-muted text-sm text-center">
-                  Send a message or select a quick scenario to begin.
-                </div>
-              )}
-              
-              {chatLog.map((msg, idx) => (
-                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`flex max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                    <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center mt-1 shadow-sm ${msg.role === 'user' ? 'bg-surface border border-border ml-3' : 'bg-primary-muted border border-primary/30 text-primary mr-3'}`}>
-                      {msg.role === 'user' ? <User size={18} /> : <Bot size={18} />}
-                    </div>
-                    
-                    <div className="flex flex-col space-y-2">
-                      <div className={`p-4 rounded-xl text-sm shadow-sm ${msg.role === 'user' ? 'bg-text-main text-background rounded-tr-sm' : 'bg-surface border border-border rounded-tl-sm'}`}>
-                        <div className="whitespace-pre-wrap">{msg.text}</div>
-                      </div>
-                      
-                      {msg.role === 'assistant' && msg.action_state === 'READY_FOR_CHECKOUT' && msg.intent_id && (
-                        <div className="pt-2">
-                          <button
-                            onClick={() => handleCheckout(msg.intent_id!, idx)}
-                            disabled={checkoutLoading || isProcessing}
-                            className="bg-emerald-500 text-background px-6 py-2.5 rounded-lg font-bold text-sm flex items-center hover:bg-emerald-400 shadow-sm transition-colors disabled:opacity-50"
-                          >
-                            {checkoutLoading ? <Clock className="animate-spin mr-2" size={16} /> : <CreditCard className="mr-2" size={16} />}
-                            Confirm Checkout
-                          </button>
-                        </div>
-                      )}
-                      
-                      {msg.role === 'assistant' && (msg.action_state === 'VERIFIED_SUCCESS' || msg.razorpay_order_id) && (
-                        <div className="pt-2">
-                          <div className="inline-flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-4 py-2 rounded-lg text-sm">
-                            <CheckCircle size={16} />
-                            <span className="font-semibold">Order Successful!</span>
-                            {msg.razorpay_order_id && (
-                              <span className="font-mono text-xs opacity-75 ml-2 border-l border-emerald-500/30 pl-2">
-                                ID: {msg.razorpay_order_id}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <div ref={chatEndRef} />
-            </div>
-            
-            <div className="p-4 border-t border-border bg-surface/80 backdrop-blur">
-              <div className="flex flex-wrap gap-2 mb-4 justify-center">
-                {['Buy the best laptop', 'Buy laptop with 20% discount', 'Buy 5 laptops', 'Buy a phone'].map(scenario => (
-                  <button 
-                    key={scenario}
-                    onClick={() => submitIntent(scenario)}
-                    disabled={isProcessing || checkoutLoading}
-                    className="px-3 py-1.5 bg-background border border-border rounded-full text-xs font-medium hover:bg-surface hover:text-primary transition-colors disabled:opacity-50 shadow-sm"
-                  >
-                    {scenario}
-                  </button>
-                ))}
-              </div>
-              <form 
-                onSubmit={(e) => { e.preventDefault(); submitIntent(input); }}
-                className="flex space-x-3"
-              >
-                <input 
-                  type="text" 
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  placeholder="Type your intent here..."
-                  className="flex-1 bg-background border border-border rounded-lg px-4 py-3 text-sm text-text-main focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-sm"
-                  disabled={isProcessing || checkoutLoading}
-                />
-                <button 
-                  type="submit"
-                  disabled={isProcessing || checkoutLoading || !input.trim()}
-                  className="bg-primary text-background px-5 rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 shadow-sm flex items-center justify-center"
-                >
-                  <Send size={18} />
-                </button>
-              </form>
-            </div>
+// ─── EventRow ─────────────────────────────────────────────────────
+function EventRow({ evt }: { evt: AgentEvent }) {
+  const [expanded, setExpanded] = useState(false);
+  const meta = getEventMeta(evt.event);
+  const hasPayload = Object.keys(evt.payload || {}).length > 0;
+
+  return (
+    <div
+      className="event-enter border border-white/5 rounded-xl overflow-hidden"
+      style={{ background: 'rgba(15,15,22,0.8)' }}
+    >
+      <button
+        className="w-full flex items-center gap-3 px-3 py-2.5 text-left btn-press"
+        onClick={() => hasPayload && setExpanded(e => !e)}
+        disabled={!hasPayload}
+      >
+        <span
+          className="w-2 h-2 rounded-full shrink-0"
+          style={{ background: meta.dot, boxShadow: `0 0 5px ${meta.dot}` }}
+        />
+        <span className="text-[10px] text-white/25 font-code w-4 shrink-0">#{evt.sequence}</span>
+        <span className={`text-[11px] font-semibold font-code tracking-wide flex-1 ${meta.color}`}>
+          {meta.label}
+        </span>
+        <span className="text-[10px] text-white/20 font-code shrink-0">
+          {new Date(evt.timestamp).toLocaleTimeString('en', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+        </span>
+        {hasPayload && (
+          <ChevronRight
+            size={12}
+            className={`text-white/20 transition-transform duration-150 shrink-0 ${expanded ? 'rotate-90' : ''}`}
+          />
+        )}
+      </button>
+
+      {expanded && hasPayload && (
+        <div className="border-t border-white/5 px-3 py-3">
+          <pre className="font-code text-[10px] text-white/50 overflow-x-auto leading-relaxed">
+            {JSON.stringify(evt.payload, null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────
+export default function AiBuyer() {
+  const [input, setInput]               = useState('');
+  const [chat, setChat]                 = useState<ChatMsg[]>([]);
+  const [isRunning, setIsRunning]       = useState(false);
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
+
+  const [runState, setRunState]   = useState<RunState | null>(null);
+  const [events, setEvents]       = useState<AgentEvent[]>([]);
+
+  // Refs — stable across re-renders
+  const hasRespondedRef  = useRef(false);
+  const activeRunIdRef   = useRef<string | null>(null);
+  const evtSourceRef     = useRef<EventSource | null>(null);
+  const chatEndRef       = useRef<HTMLDivElement>(null);
+  const eventsEndRef     = useRef<HTMLDivElement>(null);
+  const inputRef         = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chat]);
+  useEffect(() => { eventsEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [events]);
+
+  // ── SSE stream listener ──────────────────────────────────────────
+  const openStream = useCallback((runId: string) => {
+    // Close any existing stream
+    evtSourceRef.current?.close();
+
+    // SSE requires GET, so auth headers go as query params (standard pattern)
+    const url = new URL(`${API}/api/v1/runs/${runId}/stream`);
+    url.searchParams.set('x-merchant-id', MERCHANT_ID);
+    url.searchParams.set('x-customer-id', CUSTOMER_ID);
+
+    const es = new EventSource(url.toString());
+    evtSourceRef.current = es;
+
+    es.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+
+        if (msg.type === 'event') {
+          setEvents(prev => {
+            // deduplicate by sequence
+            if (prev.some(x => x.sequence === msg.payload.sequence)) return prev;
+            return [...prev, msg.payload as AgentEvent];
+          });
+        }
+
+        if (msg.type === 'state') {
+          setRunState(msg.payload as RunState);
+        }
+
+        if (msg.type === 'done') {
+          const finalState: string = msg.payload.state;
+          es.close();
+          evtSourceRef.current = null;
+
+          if (!hasRespondedRef.current) {
+            hasRespondedRef.current = true;
+            setIsRunning(false);
+
+            const text = finalState === 'BLOCKED'
+              ? 'Request blocked by policy gate. The constraint rules were not satisfied.'
+              : finalState === 'FAILED'
+              ? 'The agent run failed. Check the event log for details.'
+              : finalState === 'ESCALATED'
+              ? 'This request has been escalated for human review.'
+              : 'I found a match that passed all policy checks. Ready for checkout when you are.';
+
+            setChat(prev => [...prev, {
+              role: 'agent', text, ts: Date.now(),
+              runId, intentId: msg.payload.intent_id
+            }]);
+          }
+        }
+      } catch {
+        // malformed SSE message — ignore
+      }
+    };
+
+    es.onerror = () => {
+      // SSE auto-reconnects on transient errors — only hard-close on explicit done
+      console.warn('[SSE] Connection error — browser will retry');
+    };
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => { evtSourceRef.current?.close(); };
+  }, []);
+
+  // ── Submit intent ─────────────────────────────────────────────────
+  const submit = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || isRunning || checkoutBusy) return;
+
+    setInput('');
+    setIsRunning(true);
+    setRunState(null);
+    setEvents([]);
+    hasRespondedRef.current = false;
+    activeRunIdRef.current = null;
+    evtSourceRef.current?.close();
+
+    setChat(prev => [...prev, { role: 'user', text: trimmed, ts: Date.now() }]);
+
+    try {
+      const res = await fetch(`${API}/api/intent`, {
+        method: 'POST',
+        headers: HEADERS,
+        body: JSON.stringify({ buyer_input: trimmed }),
+      });
+
+      if (res.status === 202) {
+        const data = await res.json();
+        activeRunIdRef.current = data.run_id;
+        openStream(data.run_id);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setChat(prev => [...prev, {
+          role: 'agent',
+          text: `Error: ${err.error || res.statusText}`,
+          ts: Date.now()
+        }]);
+        setIsRunning(false);
+      }
+    } catch (err) {
+      setChat(prev => [...prev, { role: 'agent', text: 'Cannot reach backend.', ts: Date.now() }]);
+      setIsRunning(false);
+    }
+
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  // ── Checkout ───────────────────────────────────────────────────
+  const checkout = async (intentId: string, msgIndex: number) => {
+    setCheckoutBusy(true);
+    try {
+      const res = await fetch(`${API}/api/intent/${intentId}/checkout`, {
+        method: 'POST', headers: HEADERS
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setChat(prev => {
+          const next = [...prev];
+          next[msgIndex] = {
+            ...next[msgIndex],
+            text: `Order placed. Razorpay ID: ${data.razorpay_order_id || data.external_receipt}`
+          };
+          return next;
+        });
+        // Re-open SSE stream to get VERIFIED_SUCCESS from webhook
+        if (activeRunIdRef.current) openStream(activeRunIdRef.current);
+      } else {
+        alert(`Checkout failed: ${data.error || 'Unknown error'}`);
+      }
+    } catch {
+      alert('Cannot reach backend for checkout');
+    } finally {
+      setCheckoutBusy(false);
+    }
+  };
+
+  // ─── Render ──────────────────────────────────────────────────────
+  return (
+    <div className="h-full flex flex-col gap-4" style={{ maxHeight: 'calc(100vh - 8rem)' }}>
+
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <div className="shrink-0 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-white tracking-tight">AI Buyer Console</h1>
+          <p className="text-sm text-white/30 mt-0.5">
+            Every state rendered from backend events — frontend never infers
+          </p>
+        </div>
+        {runState && (
+          <div className="flex items-center gap-2 pt-1">
+            <StateChip state={runState.state} />
+            {runState.adaptation_count > 0 && (
+              <span className="text-[11px] text-amber-400/70 font-code">
+                {runState.adaptation_count}× adapted
+              </span>
+            )}
           </div>
         )}
+      </div>
 
-        {activeTab === 'live' && (
-          <div className="absolute inset-0 p-6 overflow-y-auto bg-[url('/grid.svg')] bg-center">
-            {!activeAction ? (
-              <div className="h-full flex items-center justify-center text-text-muted text-sm text-center">
-                No active transaction. Start a chat first.
+      {/* ── 3-Zone Grid ───────────────────────────────────────── */}
+      <div className="flex-1 grid grid-cols-[1fr_360px_280px] gap-4 min-h-0">
+
+        {/* LEFT — Buyer Chat ─────────────────────────────────── */}
+        <div className="glass rounded-2xl flex flex-col overflow-hidden min-h-0">
+          <div className="shrink-0 flex items-center gap-2.5 px-5 py-3.5 border-b border-white/5">
+            <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+              <User size={12} className="text-indigo-300" />
+            </div>
+            <span className="text-sm font-semibold text-white/70 tracking-wide uppercase">Buyer Interface</span>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 min-h-0">
+            {chat.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center gap-3 text-white/20">
+                <Bot size={32} strokeWidth={1.5} />
+                <span className="text-base">Send an intent to begin</span>
               </div>
             ) : (
-              <div className="space-y-6 max-w-xl mx-auto relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
-                <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full border border-border bg-surface shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10">
-                     <User size={16} className="text-text-muted" />
-                  </div>
-                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded border border-border bg-background shadow-sm">
-                    <span className="text-xs font-mono text-text-muted mb-1 block">1. INTENT</span>
-                    <div className="text-sm">{activeAction.action_type || 'Unknown Action'}</div>
-                  </div>
-                </div>
-
-                <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full border border-primary/30 bg-primary-muted shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10">
-                     <Cpu size={16} className="text-primary" />
-                  </div>
-                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded border border-primary/20 bg-primary-muted/10 shadow-sm">
-                    <span className="text-xs font-mono text-primary mb-1 block">2. GEMINI PROPOSAL</span>
-                    <div className="font-mono text-xs overflow-hidden text-ellipsis whitespace-nowrap">
-                       {activeAction.parameters_json}
+              chat.map((msg, i) => (
+                <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {msg.role === 'agent' && (
+                    <div className="w-7 h-7 rounded-full bg-indigo-500/15 border border-indigo-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <Shield size={13} className="text-indigo-400" />
                     </div>
-                  </div>
-                </div>
-
-                <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10 ${activeAction.decision === 'BLOCK' ? 'border-rose-500 bg-rose-500/20' : 'border-emerald-500 bg-emerald-500/20'}`}>
-                     <ShieldAlert size={16} className={activeAction.decision === 'BLOCK' ? 'text-rose-500' : 'text-emerald-500'} />
-                  </div>
-                  <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded border shadow-sm ${activeAction.decision === 'BLOCK' ? 'border-rose-500/50 bg-rose-500/10' : 'border-emerald-500/50 bg-emerald-500/10'}`}>
-                    <span className={`text-xs font-mono mb-1 block ${activeAction.decision === 'BLOCK' ? 'text-rose-400' : 'text-emerald-400'}`}>
-                      3. POLICY GATE
-                    </span>
-                    <div className="text-sm font-bold">
-                       {activeAction.decision}
+                  )}
+                  <div className="flex flex-col gap-2 max-w-[82%]">
+                    <div
+                      className={`px-4 py-3 rounded-2xl text-base leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'bg-white/8 text-white/90 rounded-tr-sm'
+                          : 'bg-indigo-500/8 border border-indigo-500/15 text-white/80 rounded-tl-sm'
+                      }`}
+                    >
+                      {msg.text}
                     </div>
-                    {activeAction.decision === 'BLOCK' && activeAction.reason_codes_json && (
-                      <div className="text-xs font-mono mt-2 text-rose-300">
-                        {JSON.parse(activeAction.reason_codes_json).join(', ')}
+
+                    {/* Checkout CTA */}
+                    {msg.role === 'agent' && msg.intentId && runState?.state === 'READY_FOR_CHECKOUT' && (
+                      <button
+                        onClick={() => checkout(msg.intentId!, i)}
+                        disabled={checkoutBusy || isRunning}
+                        className="self-start btn-press flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold
+                          bg-emerald-500 text-black hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20
+                          disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {checkoutBusy ? <Spinner /> : <CreditCard size={14} />}
+                        Confirm Checkout
+                      </button>
+                    )}
+
+                    {/* Success chip */}
+                    {msg.role === 'agent' && runState?.state === 'COMPLETED' && msg.runId === runState.run_id && (
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 self-start">
+                        <CheckCircle size={13} className="text-emerald-400" />
+                        <span className="text-xs text-emerald-300 font-medium">Order verified</span>
+                      </div>
+                    )}
+
+                    {/* Failed chip */}
+                    {msg.role === 'agent' && (runState?.state === 'FAILED' || runState?.state === 'BLOCKED') && msg.runId === runState?.run_id && (
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/20 self-start">
+                        <AlertTriangle size={13} className="text-rose-400" />
+                        <span className="text-xs text-rose-300 font-medium">{runState?.state}</span>
                       </div>
                     )}
                   </div>
+                  {msg.role === 'user' && (
+                    <div className="w-7 h-7 rounded-full bg-white/8 border border-white/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <User size={13} className="text-white/50" />
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+
+            {/* Thinking indicator */}
+            {isRunning && (
+              <div className="flex gap-3 justify-start">
+                <div className="w-7 h-7 rounded-full bg-indigo-500/15 border border-indigo-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <Shield size={13} className="text-indigo-400" />
+                </div>
+                <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-indigo-500/8 border border-indigo-500/15 flex items-center gap-2">
+                  <Spinner />
+                  <span className="text-base text-white/40">
+                    {runState ? runState.current_step.replace(/_/g, ' ').toLowerCase() : 'processing...'}
+                  </span>
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Input */}
+          <div className="shrink-0 border-t border-white/5 p-4">
+            <div className="flex flex-wrap gap-2 mb-3">
+              {[
+                'Best laptop under ₹80,000',
+                'Laptop with 20% discount',
+                'Buy 5 laptops for the team',
+              ].map(s => (
+                <button
+                  key={s}
+                  onClick={() => submit(s)}
+                  disabled={isRunning || checkoutBusy}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-white/40 border border-white/8
+                    hover:text-white/70 hover:border-white/20 btn-press transition-colors disabled:opacity-30"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+
+            <form onSubmit={e => { e.preventDefault(); submit(input); }} className="flex gap-2">
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                placeholder="Describe what you want to buy..."
+                disabled={isRunning || checkoutBusy}
+                className="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-black
+                  placeholder:text-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-2
+                  focus:ring-indigo-500/20 transition-all disabled:opacity-40"
+              />
+              <button
+                type="submit"
+                disabled={isRunning || checkoutBusy || !input.trim()}
+                className="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center btn-press
+                  hover:bg-indigo-400 transition-colors shadow-lg shadow-indigo-500/20
+                  disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {isRunning ? <Spinner /> : <Send size={15} className="text-white" />}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* MIDDLE — Immutable Event Log ─────────────────────── */}
+        <div
+          className="rounded-2xl flex flex-col overflow-hidden min-h-0"
+          style={{ background: 'rgba(9,9,13,0.95)', border: '1px solid rgba(255,255,255,0.04)' }}
+        >
+          <div className="shrink-0 flex items-center justify-between px-4 py-3.5 border-b border-white/5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/15 flex items-center justify-center">
+                <Zap size={12} className="text-emerald-400" />
+              </div>
+              <span className="text-sm font-semibold text-white/60 tracking-wide uppercase">Event Log</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {isRunning && (
+                <span className="text-[10px] text-emerald-400/60 font-code flex items-center gap-1">
+                  <span className="w-1 h-1 rounded-full bg-emerald-400 pulse-live" />
+                  live
+                </span>
+              )}
+              {events.length > 0 && (
+                <span className="text-[10px] font-code text-white/20">{events.length} events</span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-3 space-y-1.5 min-h-0">
+            {events.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center gap-2 text-white/15">
+                <Zap size={24} strokeWidth={1.5} />
+                <span className="text-[12px] font-code">Awaiting events...</span>
+              </div>
+            ) : (
+              events.map(evt => <EventRow key={evt.sequence} evt={evt} />)
+            )}
+            <div ref={eventsEndRef} />
+          </div>
+        </div>
+
+        {/* RIGHT — Agent State ───────────────────────────────── */}
+        <div className="glass rounded-2xl flex flex-col overflow-hidden min-h-0">
+          <div className="shrink-0 flex items-center gap-2.5 px-4 py-3.5 border-b border-white/5">
+            <div className="w-6 h-6 rounded-lg bg-blue-500/15 flex items-center justify-center">
+              <Shield size={12} className="text-blue-400" />
+            </div>
+            <span className="text-sm font-semibold text-white/60 tracking-wide uppercase">Agent State</span>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0 text-[12px]">
+            {!runState ? (
+              <div className="h-full flex flex-col items-center justify-center gap-2 text-white/15">
+                <Shield size={24} strokeWidth={1.5} />
+                <span className="font-code text-[11px]">No active run</span>
+              </div>
+            ) : (
+              <>
+                {/* Execution */}
+                <div className="bg-white/3 border border-white/5 rounded-xl p-3 space-y-2">
+                  <div className="text-[10px] font-semibold text-white/25 uppercase tracking-widest">Execution</div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/40">State</span>
+                    <StateChip state={runState.state} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/40">Step</span>
+                    <span className="font-code text-white/60">{runState.current_step}</span>
+                  </div>
+                  {runState.adaptation_count > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/40">Adaptations</span>
+                      <span className="font-code text-amber-300">{runState.adaptation_count}×</span>
+                    </div>
+                  )}
+                  {runState.policy_version && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/40">Policy</span>
+                      <span className="font-code text-white/30 text-[10px]">{runState.policy_version}</span>
+                    </div>
+                  )}
                 </div>
 
-                {activeAction.decision !== 'BLOCK' && (
-                  <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full border border-border bg-surface shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10">
-                       <Server size={16} className="text-text-muted" />
-                    </div>
-                    <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded border border-border bg-background shadow-sm">
-                      <span className="text-xs font-mono text-text-muted mb-1 block">4. EXECUTION</span>
-                      <StatusBadge status={activeAction.state} />
-                      {activeAction.razorpay_order_id && (
-                        <div className="text-xs font-mono mt-2 text-text-muted truncate">
-                          ID: {activeAction.razorpay_order_id}
-                        </div>
-                      )}
+                {/* Candidates */}
+                {runState.candidates?.length > 0 && (
+                  <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-3 space-y-2">
+                    <div className="text-[10px] font-semibold text-emerald-400/60 uppercase tracking-widest">Candidates</div>
+                    {runState.candidates.map((c: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between">
+                        <span className="text-white/60 truncate mr-2">{c.name}</span>
+                        <span className="font-code text-emerald-300 shrink-0">
+                          ₹{(c.base_price / 100).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* LLM Proposal */}
+                {runState.proposal && (
+                  <div className="bg-indigo-500/5 border border-indigo-500/10 rounded-xl p-3 space-y-2">
+                    <div className="text-[10px] font-semibold text-indigo-400/60 uppercase tracking-widest">LLM Proposal</div>
+                    <pre className="font-code text-[10px] text-white/40 overflow-x-auto leading-relaxed">
+                      {JSON.stringify(runState.proposal, null, 2)}
+                    </pre>
+                  </div>
+                )}
+
+                {/* Policy violations */}
+                {runState.action?.reason_codes?.length > 0 && (
+                  <div className="bg-rose-500/5 border border-rose-500/10 rounded-xl p-3 space-y-1.5">
+                    <div className="text-[10px] font-semibold text-rose-400/60 uppercase tracking-widest">Policy Violations</div>
+                    {runState.action.reason_codes.map((r: string, i: number) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <AlertTriangle size={11} className="text-rose-400/60 shrink-0" />
+                        <span className="font-code text-rose-300/70">{r}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Payment confirmed */}
+                {runState.action?.razorpay_order_id && (
+                  <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-xl p-3 space-y-1.5">
+                    <div className="text-[10px] font-semibold text-emerald-400/60 uppercase tracking-widest">Payment</div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={12} className="text-emerald-400 shrink-0" />
+                      <span className="font-code text-[10px] text-emerald-300/70 break-all">
+                        {runState.action.razorpay_order_id}
+                      </span>
                     </div>
                   </div>
                 )}
-              </div>
-            )}
-          </div>
-        )}
 
-        {activeTab === 'context' && (
-          <div className="absolute inset-0 p-6 overflow-y-auto bg-surface/50">
-            <div className="max-w-2xl mx-auto space-y-6">
-              
-              <div className="border border-blue-500/30 rounded-lg overflow-hidden bg-blue-500/5">
-                <div className="bg-blue-500/10 px-4 py-3 border-b border-blue-500/20 flex items-center">
-                  <User size={18} className="text-blue-500 mr-2" />
-                  <h3 className="font-semibold text-blue-400 font-mono text-sm uppercase">Buyer Memory (Context)</h3>
-                </div>
-                <div className="p-4">
-                  {!buyerMemory ? (
-                    <div className="text-sm text-text-muted italic">No memory found for this user.</div>
-                  ) : (
-                    <div className="space-y-4">
-                      {Object.entries(buyerMemory.preferences || {}).length === 0 ? (
-                        <div className="text-sm text-text-muted italic">No explicit preferences extracted yet.</div>
-                      ) : (
-                        <ul className="space-y-2">
-                          {Object.entries(buyerMemory.preferences).map(([key, val]) => (
-                            <li key={key} className="flex items-center text-sm">
-                              <CheckCircle size={14} className="text-blue-400 mr-2 shrink-0" />
-                              <span className="font-mono text-text-muted mr-2">{key}:</span>
-                              <span className="font-medium">{String(val)}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      <div className="text-xs font-mono text-text-muted/60 pt-2 border-t border-blue-500/10 mt-2">
-                        Last Updated: {buyerMemory.last_updated} | v{buyerMemory.memory_version}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="border border-emerald-500/30 rounded-lg overflow-hidden bg-emerald-500/5">
-                <div className="bg-emerald-500/10 px-4 py-3 border-b border-emerald-500/20 flex items-center">
-                  <Database size={18} className="text-emerald-500 mr-2" />
-                  <h3 className="font-semibold text-emerald-400 font-mono text-sm uppercase">Current Commerce (Authority)</h3>
-                </div>
-                <div className="p-4">
-                  {!evidence?.policy_version ? (
-                    <div className="text-sm text-text-muted italic">Awaiting transaction...</div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div>
-                        <span className="font-mono text-xs text-text-muted block mb-1">POLICY VERSION</span>
-                        <div className="text-sm font-medium">{evidence.policy_version}</div>
-                      </div>
-                      <div>
-                        <span className="font-mono text-xs text-text-muted block mb-1">GATE DECISION</span>
-                        <div className="text-sm font-medium text-emerald-400">{evidence.gate_decision}</div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'evidence' && (
-          <div className="absolute inset-0 p-6 overflow-y-auto">
-            {!evidence ? (
-               <div className="h-full flex flex-col items-center justify-center text-text-muted text-sm text-center">
-                 <Database size={32} className="mb-2 opacity-50" />
-                 No evidence available. Start a chat first.
-               </div>
-            ) : (
-              <div className="space-y-4 max-w-2xl mx-auto">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold text-text-main">System Evidence payload</h3>
-                  {activeAction?.policy_version && (
-                    <span className="px-2 py-0.5 rounded bg-surface border border-border text-xs font-mono text-text-muted">
-                      {activeAction.policy_version}
-                    </span>
-                  )}
-                </div>
-                {Object.entries(evidence).map(([key, val]) => (
-                  <div key={key} className="border border-border rounded-md bg-background overflow-hidden">
-                    <div className="bg-surface/50 px-3 py-2 border-b border-border text-xs font-mono font-bold text-text-muted uppercase">
-                      {key}
-                    </div>
-                    <div className="p-4">
-                      <pre className="text-xs font-mono text-text-main overflow-x-auto">
-                        {JSON.stringify(val, null, 2)}
-                      </pre>
-                    </div>
+                {/* Buyer memory */}
+                {runState.buyer_memory && (
+                  <div className="bg-purple-500/5 border border-purple-500/10 rounded-xl p-3 space-y-2">
+                    <div className="text-[10px] font-semibold text-purple-400/60 uppercase tracking-widest">Buyer Memory</div>
+                    {Object.entries(runState.buyer_memory.preferences || {}).length === 0 ? (
+                      <span className="text-white/25 font-code">No preferences stored</span>
+                    ) : (
+                      Object.entries(runState.buyer_memory.preferences).map(([k, v]) => (
+                        <div key={k} className="flex items-center justify-between gap-2">
+                          <span className="text-white/30 font-code truncate">{k}</span>
+                          <span className="text-purple-300/70 font-code text-[10px]">{String(v)}</span>
+                        </div>
+                      ))
+                    )}
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

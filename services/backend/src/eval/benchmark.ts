@@ -26,11 +26,11 @@ async function runEval() {
 
   require('../db/seed'); // Reset DB baseline
   const db = getDb();
-  db.prepare('UPDATE products SET price = 1000 WHERE product_id = ?').run('prod_macbook');
+  await db.prepare('UPDATE products SET price = 1000 WHERE product_id = ?').run('prod_macbook');
 
   // Wipe old benchmark evals from DB
-  db.prepare(`DELETE FROM metric_events WHERE intent_id LIKE 'eval_benchmark_%'`).run();
-  db.prepare(`DELETE FROM traces WHERE intent_id LIKE 'eval_benchmark_%'`).run();
+  await db.prepare(`DELETE FROM metric_events WHERE intent_id LIKE 'eval_benchmark_%'`).run();
+  await db.prepare(`DELETE FROM traces WHERE intent_id LIKE 'eval_benchmark_%'`).run();
 
   for (let i = 0; i < totalCases; i++) {
     const scenario = SCENARIOS[i % SCENARIOS.length];

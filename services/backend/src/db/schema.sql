@@ -4,12 +4,12 @@
 -- ─── Policies ───────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS policy_versions (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  id            SERIAL PRIMARY KEY,
   merchant_id   TEXT    NOT NULL,
   version       TEXT    NOT NULL UNIQUE,
   source_text   TEXT    NOT NULL,
   rules_json    TEXT    NOT NULL,  -- JSON array of PolicyRule
-  compiled_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+  compiled_at   TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(merchant_id, version)
 );
 
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS products (
     product_id TEXT PRIMARY KEY,
     merchant_id TEXT NOT NULL,
     name TEXT NOT NULL,
-    price REAL NOT NULL,
+    price NUMERIC NOT NULL,
     currency TEXT DEFAULT 'INR'
 );
 
@@ -36,8 +36,8 @@ CREATE TABLE IF NOT EXISTS buyer_memory (
   preferences_json          TEXT    NOT NULL DEFAULT '{}',
   negotiation_history_json  TEXT    NOT NULL DEFAULT '[]',
   memory_version            INTEGER NOT NULL DEFAULT 1,
-  created_at                TEXT    NOT NULL DEFAULT (datetime('now')),
-  last_updated              TEXT    NOT NULL DEFAULT (datetime('now'))
+  created_at                TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_updated              TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS intents (
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS intents (
   merchant_id   TEXT    NOT NULL,
   buyer_input   TEXT    NOT NULL,
   customer_id   TEXT,
-  received_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+  received_at   TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ─── Actions ────────────────────────────────────────────────────
@@ -65,8 +65,8 @@ CREATE TABLE IF NOT EXISTS actions (
   razorpay_order_id TEXT,
   reason_codes_json TEXT    NOT NULL DEFAULT '[]',
   evidence_json     TEXT    NOT NULL DEFAULT '[]',
-  created_at        TEXT    NOT NULL DEFAULT (datetime('now')),
-  updated_at        TEXT    NOT NULL DEFAULT (datetime('now'))
+  created_at        TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at        TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ─── Audit Events ───────────────────────────────────────────────
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS audit_events (
   action_type     TEXT    NOT NULL DEFAULT '',
   result          TEXT    NOT NULL DEFAULT '',
   metadata_json   TEXT    NOT NULL DEFAULT '{}',
-  timestamp       TEXT    NOT NULL DEFAULT (datetime('now'))
+  timestamp       TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ─── Webhook Events (deduplication) ─────────────────────────────
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS webhook_events (
   event_type    TEXT    NOT NULL,
   payload_json  TEXT    NOT NULL,
   processed     INTEGER NOT NULL DEFAULT 0,
-  received_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+  received_at   TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ─── Indexes ────────────────────────────────────────────────────
@@ -117,13 +117,13 @@ CREATE TABLE IF NOT EXISTS metric_events (
   stage           TEXT    NOT NULL,
   start_time      INTEGER NOT NULL,
   end_time        INTEGER NOT NULL,
-  duration_ms     REAL    NOT NULL,
+  duration_ms     NUMERIC    NOT NULL,
   result          TEXT    NOT NULL,
   decision        TEXT,
   error_type      TEXT,
   model           TEXT,
   metadata        TEXT    NOT NULL DEFAULT '{}',
-  created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+  created_at      TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS traces (
@@ -131,10 +131,10 @@ CREATE TABLE IF NOT EXISTS traces (
   request_id      TEXT    NOT NULL,
   intent_id       TEXT    NOT NULL,
   action_id       TEXT,
-  total_duration_ms REAL,
+  total_duration_ms NUMERIC,
   status          TEXT    NOT NULL,
   error_type      TEXT,
-  created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+  created_at      TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_metrics_trace ON metric_events(trace_id);
@@ -155,9 +155,24 @@ CREATE TABLE IF NOT EXISTS agent_runs (
   adaptation_count    INTEGER NOT NULL DEFAULT 0,
   trace_id            TEXT    NOT NULL,
   trace_events_json   TEXT    NOT NULL DEFAULT '[]',
-  created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
-  updated_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+  created_at          TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at          TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   completed_at        TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_agent_runs_intent ON agent_runs(intent_id);
+
+-- ─── Agent Events ───────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS agent_events (
+  id            SERIAL PRIMARY KEY,
+  run_id        TEXT    NOT NULL REFERENCES agent_runs(agent_run_id),
+  sequence      INTEGER NOT NULL,
+  event_type    TEXT    NOT NULL,
+  payload_json  TEXT    NOT NULL DEFAULT '{}',
+  timestamp     TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(run_id, sequence)
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_events_run ON agent_events(run_id);
+

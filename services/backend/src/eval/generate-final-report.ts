@@ -8,9 +8,9 @@ export async function generateFinalReport(writeToDisk: boolean = true) {
   try {
     const db = getDb();
   
-  const traces = db.prepare('SELECT * FROM traces').all() as any[];
-  const metricEvents = db.prepare('SELECT * FROM metric_events').all() as any[];
-  const actions = db.prepare('SELECT * FROM actions').all() as any[];
+  const traces = await db.prepare('SELECT * FROM traces').all() as any[];
+  const metricEvents = await db.prepare('SELECT * FROM metric_events').all() as any[];
+  const actions = await db.prepare('SELECT * FROM actions').all() as any[];
   
   const suites = {
     gemini: traces.filter(t => t.intent_id.startsWith('eval_gemini_')),

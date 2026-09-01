@@ -22,7 +22,7 @@ router.post('/compile', async (req, res, next) => {
   }
 });
 
-router.get('/:merchantId', (req, res) => {
+router.get('/:merchantId', async (req, res) => {
   const policies = getPolicies(req.params.merchantId);
   if (!policies) {
     return res.status(404).json({ error: 'No policies found' });

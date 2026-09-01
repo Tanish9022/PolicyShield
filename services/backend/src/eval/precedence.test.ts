@@ -35,12 +35,12 @@ describe('Policy Precedence Tests', () => {
     
     // Mutate policy to 5% strictly for this test, demonstrating state isolation
     // The previous test will not be affected because of beforeEach reset
-    const versions = db.prepare('SELECT version, rules_json FROM policy_versions WHERE merchant_id = ? ORDER BY compiled_at DESC LIMIT 1').get(merchantId) as any;
+    const versions = await db.prepare('SELECT version, rules_json FROM policy_versions WHERE merchant_id = ? ORDER BY compiled_at DESC LIMIT 1').get(merchantId) as any;
     const rules = JSON.parse(versions.rules_json);
     const maxDiscountRule = rules.find((r: any) => r.rule_type === 'MAX_DISCOUNT');
     maxDiscountRule.parameters.max_discount_percent = 5;
     
-    db.prepare('UPDATE policy_versions SET rules_json = ? WHERE merchant_id = ? AND version = ?').run(JSON.stringify(rules), merchantId, versions.version);
+    await db.prepare('UPDATE policy_versions SET rules_json = ? WHERE merchant_id = ? AND version = ?').run(JSON.stringify(rules), merchantId, versions.version);
 
     const intent: IntentRequest = {
       request_id: uuidv4() as any,

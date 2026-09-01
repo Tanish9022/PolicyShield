@@ -21,13 +21,13 @@ export class TelemetryTracer {
     `).run(this.traceId, this.requestId, this.intentId);
   }
 
-  public setActionId(actionId: string) {
+  public async setActionId(actionId: string) {
     this.actionId = actionId;
     const db = getDb();
-    db.prepare(`UPDATE traces SET action_id = ? WHERE trace_id = ?`).run(this.actionId, this.traceId);
+    await db.prepare(`UPDATE traces SET action_id = ? WHERE trace_id = ?`).run(this.actionId, this.traceId);
   }
 
-  public recordStage(stage: string, startTime: number, result: string, decision?: string, errorType?: string, model?: string, metadata?: any) {
+  public async recordStage(stage: string, startTime: number, result: string, decision?: string, errorType?: string, model?: string, metadata?: any) {
     const endTime = performance.now();
     const durationMs = endTime - startTime;
     const db = getDb();
@@ -45,10 +45,10 @@ export class TelemetryTracer {
     );
   }
 
-  public completeTrace(status: string, errorType?: string) {
+  public async completeTrace(status: string, errorType?: string) {
     const totalDuration = performance.now() - this.traceStartTime;
     const db = getDb();
-    db.prepare(`
+    await db.prepare(`
       UPDATE traces 
       SET total_duration_ms = ?, status = ?, error_type = ?
       WHERE trace_id = ?

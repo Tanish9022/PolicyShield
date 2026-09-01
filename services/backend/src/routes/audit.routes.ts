@@ -3,10 +3,10 @@ import { getDb } from '../db/client';
 
 const router = Router();
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const db = getDb();
   try {
-    const events = db.prepare(`
+    const events = await db.prepare(`
       SELECT 
         a.action_id as event_id,
         a.action_type as event_type,

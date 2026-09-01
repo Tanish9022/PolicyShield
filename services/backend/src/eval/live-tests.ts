@@ -28,7 +28,7 @@ const server = app.listen(0, () => {
 });
 
 // Set baseline data so Test 1 passes stale check and threshold check
-db.prepare('UPDATE products SET price = 1000 WHERE product_id = ?').run('prod_macbook');
+await db.prepare('UPDATE products SET price = 1000 WHERE product_id = ?').run('prod_macbook');
 
 // We inject chaos here for Test 6
 let injectTimeout = false;
@@ -61,8 +61,8 @@ async function runLiveTests() {
   const db = getDb();
 
   // Reset inventory and price before tests
-  db.prepare('UPDATE inventory SET stock_level = ? WHERE merchant_id = ?').run(10, merchantId);
-  db.prepare('UPDATE products SET price = ? WHERE product_id = ?').run(1000, 'prod_macbook');
+  await db.prepare('UPDATE inventory SET stock_level = ? WHERE merchant_id = ?').run(10, merchantId);
+  await db.prepare('UPDATE products SET price = ? WHERE product_id = ?').run(1000, 'prod_macbook');
 
   // Tests 1-4
   const tests = [
@@ -143,7 +143,7 @@ async function runLiveTests() {
   const result6 = await processIntent(t6Intent);
   const t6ActionId = result6.action.action_id;
   
-  db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(t6ActionId);
+  await db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(t6ActionId);
   injectTimeout = true;
   try {
     await executeAction(t6ActionId);
@@ -181,7 +181,7 @@ async function runLiveTests() {
     parameters: { min_reserve: 2 },
     priority: 1
   });
-  db.prepare('UPDATE policy_versions SET rules_json = ? WHERE merchant_id = ? AND version = ?').run(JSON.stringify(graph.rules), merchantId, graph.version);
+  await db.prepare('UPDATE policy_versions SET rules_json = ? WHERE merchant_id = ? AND version = ?').run(JSON.stringify(graph.rules), merchantId, graph.version);
   
   const t7Intent: IntentRequest = {
     request_id: uuidv4() as any, intent_id: uuidv4() as any, merchant_id: merchantId as any,
@@ -189,15 +189,15 @@ async function runLiveTests() {
   };
   const result7 = await processIntent(t7Intent);
   const t7ActionId = result7.action.action_id;
-  db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(t7ActionId);
-  db.prepare('UPDATE inventory SET stock_level = ? WHERE merchant_id = ?').run(0, merchantId); // Mutate inventory
+  await db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(t7ActionId);
+  await db.prepare('UPDATE inventory SET stock_level = ? WHERE merchant_id = ?').run(0, merchantId); // Mutate inventory
   try {
     await executeAction(t7ActionId);
     console.log(`  Result: ❌ Execution should have been blocked\n`);
   } catch (e: any) {
     console.log(`  Result: ✅ Blocked by JIT: ${e.message}\n`);
   }
-  db.prepare('UPDATE inventory SET stock_level = ? WHERE merchant_id = ?').run(10, merchantId); // Restore
+  await db.prepare('UPDATE inventory SET stock_level = ? WHERE merchant_id = ?').run(10, merchantId); // Restore
   testNum++;
 
   // Test 8: Stale price
@@ -208,8 +208,8 @@ async function runLiveTests() {
   };
   const result8 = await processIntent(t8Intent);
   const t8ActionId = result8.action.action_id;
-  db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(t8ActionId);
-  db.prepare('UPDATE products SET price = ? WHERE product_id = ?').run(200000, 'prod_macbook'); // Mutate price
+  await db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(t8ActionId);
+  await db.prepare('UPDATE products SET price = ? WHERE product_id = ?').run(200000, 'prod_macbook'); // Mutate price
   try {
     await executeAction(t8ActionId);
     console.log(`  Result: ❌ Execution should have been blocked\n`);
@@ -217,12 +217,12 @@ async function runLiveTests() {
   } catch (e: any) {
     console.log(`  Result: ✅ Blocked by JIT: ${e.message}\n`);
   }
-  db.prepare('UPDATE products SET price = ? WHERE product_id = ?').run(1000, 'prod_macbook'); // Restore
+  await db.prepare('UPDATE products SET price = ? WHERE product_id = ?').run(1000, 'prod_macbook'); // Restore
   testNum++;
 
   // Test 9: Duplicate Webhook
   console.log(`Test ${testNum}: Duplicate webhook`);
-  db.prepare('DELETE FROM webhook_events WHERE event_id = ?').run('evt_dup'); // Reset state
+  await db.prepare('DELETE FROM webhook_events WHERE event_id = ?').run('evt_dup'); // Reset state
   const webhookPayload = { event: 'order.paid', entity: { id: 'evt_dup' }, payload: { order: { entity: { id: 'order_test' } } } };
   const rawBody = JSON.stringify(webhookPayload);
   const signature = crypto.createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET || 'secret').update(rawBody).digest('hex');
@@ -258,10 +258,10 @@ async function runLiveTests() {
   };
   const result10 = await processIntent(t10Intent);
   const t10ActionId = result10.action.action_id;
-  db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(t10ActionId);
-  const currentVersion = db.prepare('SELECT version FROM policy_versions WHERE merchant_id = ? ORDER BY compiled_at DESC LIMIT 1').get(merchantId) as any;
+  await db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(t10ActionId);
+  const currentVersion = await db.prepare('SELECT version FROM policy_versions WHERE merchant_id = ? ORDER BY compiled_at DESC LIMIT 1').get(merchantId) as any;
   if (currentVersion) {
-    db.prepare('UPDATE policy_versions SET version = ? WHERE merchant_id = ? AND version = ?').run(uuidv4(), merchantId, currentVersion.version); // Mutate policy version
+    await db.prepare('UPDATE policy_versions SET version = ? WHERE merchant_id = ? AND version = ?').run(uuidv4(), merchantId, currentVersion.version); // Mutate policy version
   }
   try {
     await executeAction(t10ActionId);
@@ -280,7 +280,7 @@ async function runLiveTests() {
   const t11graph = getPolicies(merchantId);
   const t11rule = t11graph.rules.find((r: any) => r.rule_type === 'MAX_DISCOUNT');
   if (t11rule) t11rule.parameters.max_discount_percent = 5;
-  db.prepare('UPDATE policy_versions SET rules_json = ? WHERE merchant_id = ? AND version = ?').run(JSON.stringify(t11graph.rules), merchantId, t11graph.version);
+  await db.prepare('UPDATE policy_versions SET rules_json = ? WHERE merchant_id = ? AND version = ?').run(JSON.stringify(t11graph.rules), merchantId, t11graph.version);
   
   const t11Intent: IntentRequest = {
     request_id: uuidv4() as any, intent_id: uuidv4() as any, merchant_id: merchantId as any,
@@ -300,7 +300,7 @@ async function runLiveTests() {
   console.log('\nTest 12: Discount Precedence (Policy 15 == Promo 15 < Req 20)');
   // Set policy back to 15%
   if (t11rule) t11rule.parameters.max_discount_percent = 15;
-  db.prepare('UPDATE policy_versions SET rules_json = ? WHERE merchant_id = ? AND version = ?').run(JSON.stringify(t11graph.rules), merchantId, t11graph.version);
+  await db.prepare('UPDATE policy_versions SET rules_json = ? WHERE merchant_id = ? AND version = ?').run(JSON.stringify(t11graph.rules), merchantId, t11graph.version);
   
   const t12Intent: IntentRequest = {
     request_id: uuidv4() as any, intent_id: uuidv4() as any, merchant_id: merchantId as any,
@@ -326,7 +326,7 @@ async function runLiveTests() {
   const t13ActionId = result13.action.action_id;
   
   // Set back to VALIDATED explicitly
-  db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(t13ActionId);
+  await db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(t13ActionId);
   
   // Try concurrent executions
   const p1 = executeAction(t13ActionId).catch(e => e.message);

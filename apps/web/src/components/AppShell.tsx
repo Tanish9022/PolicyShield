@@ -1,92 +1,123 @@
 import type { ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Shield, LayoutDashboard, FileText, Bot, ListOrdered, AlertOctagon, Activity, Search, FlaskConical, Play } from 'lucide-react';
+import {
+  Shield, LayoutDashboard, FileText, Bot, ListOrdered,
+  AlertOctagon, Search
+} from 'lucide-react';
 
 const navItems = [
-  { path: '/', label: 'Overview', icon: <LayoutDashboard size={18} /> },
-  { path: '/policies', label: 'Merchant Policies', icon: <FileText size={18} /> },
-  { path: '/buyer', label: 'AI Buyer Simulator', icon: <Bot size={18} /> },
-  { path: '/decisions', label: 'Decisions', icon: <ListOrdered size={18} /> },
-  { path: '/failures', label: 'Failure Center', icon: <AlertOctagon size={18} /> },
-  { path: '/audit', label: 'Audit Ledger', icon: <Search size={18} /> },
-  { path: '/chaos', label: 'Chaos Control', icon: <Activity size={18} /> },
-  { path: '/evaluation', label: 'Evaluation', icon: <FlaskConical size={18} /> },
-  { path: '/demo', label: 'End-to-End Checkout Demo', icon: <Play size={18} /> }
+  { path: '/', label: 'Overview', icon: LayoutDashboard },
+  { path: '/buyer', label: 'AI Buyer Console', icon: Bot, highlight: true },
+  { path: '/policies', label: 'Merchant Policies', icon: FileText },
+  { path: '/decisions', label: 'Decisions', icon: ListOrdered },
+  { path: '/failures', label: 'Failure Center', icon: AlertOctagon },
+  { path: '/audit', label: 'Audit Ledger', icon: Search },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
 
   return (
-    <div className="flex h-screen bg-background text-text-main font-sans overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-border flex flex-col bg-surface/50">
-        <div className="h-16 flex items-center px-6 border-b border-border">
-          <Shield className="text-primary mr-2" size={24} />
-          <span className="font-display font-semibold text-lg tracking-tight">PolicyShield</span>
+    <div className="flex h-screen bg-background text-text-main overflow-hidden" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+      {/* ── Sidebar ─────────────────────────────────────────────── */}
+      <aside
+        className="w-60 flex flex-col shrink-0 border-r border-white/5"
+        style={{ background: 'rgba(10, 10, 14, 0.98)' }}
+      >
+        {/* Wordmark */}
+        <div className="h-14 flex items-center px-5 border-b border-white/5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
+              <Shield size={14} className="text-white" strokeWidth={2.5} />
+            </div>
+            <div>
+              <span className="text-sm font-semibold tracking-tight text-white">PolicyShield</span>
+            </div>
+          </div>
         </div>
-        
-        <nav className="flex-1 py-6 px-4 space-y-1 overflow-y-auto">
+
+        {/* Nav */}
+        <nav className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+            const isActive = location.pathname === item.path ||
+              (item.path !== '/' && location.pathname.startsWith(item.path));
+            const Icon = item.icon;
+
             return (
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={`flex items-center space-x-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                  isActive 
-                    ? 'bg-primary-muted text-primary' 
-                    : 'text-text-muted hover:text-text-main hover:bg-surface'
-                }`}
+                className={`
+                  group flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium
+                  transition-all duration-150 btn-press
+                  ${isActive
+                    ? 'bg-primary/15 text-primary'
+                    : 'text-white/40 hover:text-white/80 hover:bg-white/5'
+                  }
+                `}
+                style={isActive ? { boxShadow: 'inset 0 0 0 1px rgba(99,102,241,0.2)' } : {}}
               >
-                <span className={isActive ? 'text-primary' : 'text-text-muted'}>{item.icon}</span>
+                <Icon
+                  size={16}
+                  className={`shrink-0 transition-colors ${isActive ? 'text-primary' : 'text-white/30 group-hover:text-white/60'}`}
+                  strokeWidth={isActive ? 2.5 : 2}
+                />
                 <span>{item.label}</span>
+                {item.highlight && !isActive && (
+                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary/60" />
+                )}
               </NavLink>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t border-border">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center text-xs font-bold text-primary">
+        {/* Footer identity */}
+        <div className="p-4 border-t border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-[11px] font-bold text-white shadow-sm">
               M
             </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium">Merchant Admin</span>
-              <span className="text-xs text-text-muted">Test Environment</span>
+            <div>
+              <div className="text-[12px] font-medium text-white/70">Merchant Admin</div>
+              <div className="text-[10px] text-white/30 font-code">Test Environment</div>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      {/* ── Main ────────────────────────────────────────────────── */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background">
         {/* Topbar */}
-        <header className="h-16 border-b border-border bg-background flex items-center justify-between px-8 shrink-0">
-          <div className="flex items-center space-x-4">
-            <span className="px-2.5 py-1 rounded-full bg-primary-muted text-primary text-xs font-bold tracking-widest">
-              TEST MODE
+        <header
+          className="h-14 flex items-center justify-between px-6 shrink-0 border-b border-white/5"
+          style={{ background: 'rgba(10, 10, 14, 0.95)', backdropFilter: 'blur(20px)' }}
+        >
+          <div className="flex items-center gap-3">
+            <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-semibold tracking-widest uppercase">
+              Test Mode
             </span>
           </div>
-          <div className="flex items-center space-x-6 text-sm text-text-muted">
-             <div className="flex items-center space-x-2">
-               <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-               <span>Backend</span>
-             </div>
-             <div className="flex items-center space-x-2">
-               <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-               <span>Gemini</span>
-             </div>
-             <div className="flex items-center space-x-2">
-               <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-               <span>Razorpay API</span>
-             </div>
+
+          <div className="flex items-center gap-5 text-[12px]">
+            {[
+              { label: 'Backend', active: true },
+              { label: 'Gemini', active: true },
+              { label: 'Razorpay', active: true },
+            ].map(({ label, active }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-emerald-400' : 'bg-red-400'}`}
+                  style={active ? { boxShadow: '0 0 4px #34d399' } : {}}
+                />
+                <span className="text-white/40">{label}</span>
+              </div>
+            ))}
           </div>
         </header>
 
-        {/* Scrollable Page Content */}
-        <div className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-7xl mx-auto h-full">
+        {/* Page content */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-screen-2xl mx-auto h-full px-6 py-6">
             {children}
           </div>
         </div>

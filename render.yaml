@@ -1,29 +1,37 @@
 services:
+  # ─── Backend API (Render Web Service + Persistent Disk) ──────────────────
   - type: web
     name: policyshield-api
     env: node
-    buildCommand: npm install && npm run build
-    startCommand: npm run start --workspace=services/backend
+    region: singapore
+    plan: starter
+    rootDir: .
+    buildCommand: npm ci --workspace=services/backend && npm run build --workspace=services/backend
+    startCommand: node services/backend/dist/index.js
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: VITE_API_URL
-        value: https://policyshield-api.onrender.com
       - key: PORT
-        value: 3001
-      - key: STUB_AI
-        value: true
-      - key: STUB_RAZORPAY
-        value: true
+        value: 10000
+      # SQLite file on the persistent disk
+      - key: DB_PATH
+        value: /var/data/policyshield.db
+      # Identity defaults — must match seeded data
+      - key: DEV_MERCHANT_ID
+        value: merchant_1
+      - key: DEV_CUSTOMER_ID
+        value: cust_demo
+      # Secrets — set via Render dashboard (not here)
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
     disk:
       name: policyshield-db
       mountPath: /var/data
       sizeGB: 1
-  - type: web
-    name: policyshield-frontend
-    env: static
-    buildCommand: npm install && npm run build --workspace=apps/web
-    staticPublishPath: apps/web/dist
-    envVars:
-      - key: VITE_API_URL
-        value: https://policyshield-api.onrender.com

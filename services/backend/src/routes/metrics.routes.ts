@@ -3,13 +3,13 @@ import { getDb } from '../db/client';
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const db = getDb();
     
     // Total traces
-    const traces = db.prepare('SELECT * FROM traces').all() as any[];
-    const metricEvents = db.prepare('SELECT * FROM metric_events').all() as any[];
+    const traces = await db.prepare('SELECT * FROM traces').all() as any[];
+    const metricEvents = await db.prepare('SELECT * FROM metric_events').all() as any[];
     
     // Group by suite
     const suites = {
@@ -19,7 +19,7 @@ router.get('/', (req, res) => {
       production: traces.filter(t => !t.intent_id.startsWith('eval_'))
     };
 
-    const computeStats = (suiteTraces: any[]) => {
+    const computeStats = async (suiteTraces: any[]) => {
       const traceIds = new Set(suiteTraces.map(t => t.trace_id));
       const suiteEvents = metricEvents.filter(e => traceIds.has(e.trace_id));
       
@@ -42,7 +42,7 @@ router.get('/', (req, res) => {
 
       // Unsafe Actions Executed
       const traceIntentIds = new Set(suiteTraces.map(t => t.intent_id));
-      const unsafeActions = db.prepare("SELECT * FROM actions WHERE state = 'VERIFIED_SUCCESS' AND decision != 'APPROVE'").all() as any[];
+      const unsafeActions = await db.prepare("SELECT * FROM actions WHERE state = 'VERIFIED_SUCCESS' AND decision != 'APPROVE'").all() as any[];
       const unsafeExecuted = unsafeActions.filter(a => traceIntentIds.has(a.intent_id)).length;
 
       return {
@@ -57,10 +57,10 @@ router.get('/', (req, res) => {
     };
 
     const response = {
-      realGemini: computeStats(suites.gemini),
-      benchmark: computeStats(suites.benchmark),
-      redTeam: computeStats(suites.redteam),
-      production: computeStats(suites.production)
+      realGemini: await computeStats(suites.gemini),
+      benchmark: await computeStats(suites.benchmark),
+      redTeam: await computeStats(suites.redteam),
+      production: await computeStats(suites.production)
     };
 
     res.json(response);

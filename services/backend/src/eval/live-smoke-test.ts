@@ -66,7 +66,7 @@ async function runLiveSmokeTest() {
       console.log("4. Verifying execution...");
       // In a full verification loop, a webhook would trigger it. Here we trust the synchronous execResult for the smoke test.
       // We will check the audit events in DB.
-      const audit = db.prepare(`SELECT * FROM audit_events WHERE action_id = ? AND event_type = 'ACTION_VERIFIED_SUCCESS'`).get(finalAction.action_id);
+      const audit = await db.prepare(`SELECT * FROM audit_events WHERE action_id = ? AND event_type = 'ACTION_VERIFIED_SUCCESS'`).get(finalAction.action_id);
       
       console.log(`-> Audit Event Found: ${audit ? 'YES' : 'NO'}`);
       

@@ -146,8 +146,8 @@ async function run() {
   console.log('Running Gemini Live Evaluation Suite (50 Scenarios)...');
   
   // Wipe old gemini evals from metric_events to keep the DB clean for the report
-  db.prepare(`DELETE FROM metric_events WHERE intent_id LIKE 'eval_gemini_%'`).run();
-  db.prepare(`DELETE FROM traces WHERE intent_id LIKE 'eval_gemini_%'`).run();
+  await db.prepare(`DELETE FROM metric_events WHERE intent_id LIKE 'eval_gemini_%'`).run();
+  await db.prepare(`DELETE FROM traces WHERE intent_id LIKE 'eval_gemini_%'`).run();
   
   const results = [];
   const limit = 1; // Rate limit protection

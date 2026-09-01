@@ -4,7 +4,7 @@ import { storePolicies } from '../policy-graph/graph';
 import { PolicyGraph } from '@policyshield/shared';
 import fs from 'fs';
 import path from 'path';
-import Database from 'better-sqlite3';
+import { getDb } from '../db/client';
 
 let testDbPath: string | null = null;
 
@@ -26,16 +26,16 @@ export function teardownTestDatabase() {
 export function resetTestDatabase() {
   const db = getDb();
   // Delete in correct order to avoid foreign key constraints
-  db.prepare('DELETE FROM metric_events').run();
-  db.prepare('DELETE FROM traces').run();
-  db.prepare('DELETE FROM audit_events').run();
-  db.prepare('DELETE FROM webhook_events').run();
-  db.prepare('DELETE FROM agent_runs').run();
-  db.prepare('DELETE FROM actions').run();
-  db.prepare('DELETE FROM intents').run();
-  db.prepare('DELETE FROM inventory').run();
-  db.prepare('DELETE FROM products').run();
-  db.prepare('DELETE FROM policy_versions').run();
+  await db.prepare('DELETE FROM metric_events').run();
+  await db.prepare('DELETE FROM traces').run();
+  await db.prepare('DELETE FROM audit_events').run();
+  await db.prepare('DELETE FROM webhook_events').run();
+  await db.prepare('DELETE FROM agent_runs').run();
+  await db.prepare('DELETE FROM actions').run();
+  await db.prepare('DELETE FROM intents').run();
+  await db.prepare('DELETE FROM inventory').run();
+  await db.prepare('DELETE FROM products').run();
+  await db.prepare('DELETE FROM policy_versions').run();
   
   seedTestDatabase();
 }

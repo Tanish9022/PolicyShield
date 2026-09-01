@@ -12,8 +12,9 @@ import intentRoutes from './routes/intent.routes';
 import webhookRoutes from './routes/webhook.routes';
 import decisionsRoutes from './routes/decisions.routes';
 import auditRoutes from './routes/audit.routes';
-import chaosRoutes from './routes/chaos.routes';
 import metricsRoutes from './routes/metrics.routes';
+import runsRoutes from './routes/runs.routes';
+import streamRoutes from './routes/stream.routes';
 
 import path from 'path';
 
@@ -59,17 +60,17 @@ app.get('/api/status', (_req, res) => {
   const db = getDb();
   
   // Basic counts
-  const policyCount = db.prepare('SELECT COUNT(*) as count FROM policy_versions').get() as { count: number };
+  const policyCount = db.prepare('SELECT COUNT(*) as count FROM policy_versions').get() as unknown as { count: number };
   
   // KPI counts
-  const totalDecisions = db.prepare("SELECT COUNT(*) as count FROM actions").get() as { count: number };
-  const blocked = db.prepare("SELECT COUNT(*) as count FROM actions WHERE decision = 'BLOCK'").get() as { count: number };
-  const escalations = db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'ESCALATED'").get() as { count: number };
-  const successful = db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'VERIFIED_SUCCESS'").get() as { count: number };
-  const unknown = db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'EXECUTION_UNKNOWN'").get() as { count: number };
+  const totalDecisions = db.prepare("SELECT COUNT(*) as count FROM actions").get() as unknown as { count: number };
+  const blocked = db.prepare("SELECT COUNT(*) as count FROM actions WHERE decision = 'BLOCK'").get() as unknown as { count: number };
+  const escalations = db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'ESCALATED'").get() as unknown as { count: number };
+  const successful = db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'VERIFIED_SUCCESS'").get() as unknown as { count: number };
+  const unknown = db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'EXECUTION_UNKNOWN'").get() as unknown as { count: number };
   
   // Unsafe mutations invariant
-  const unsafeRow = db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'VERIFIED_SUCCESS' AND decision != 'APPROVE'").get() as { count: number };
+  const unsafeRow = db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'VERIFIED_SUCCESS' AND decision != 'APPROVE'").get() as unknown as { count: number };
   const unsafe = unsafeRow.count;
 
   res.json({
@@ -89,8 +90,9 @@ app.use('/api/intent', intentRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/decisions', decisionsRoutes);
 app.use('/api/audit', auditRoutes);
-app.use('/api/chaos', chaosRoutes);
 app.use('/api/eval/metrics', metricsRoutes);
+app.use('/api/v1/runs', runsRoutes);
+app.use('/api/v1/runs', streamRoutes); // SSE stream — same prefix, different path (/stream)
 
 // ─── Error Handler ──────────────────────────────────────────────
 
@@ -108,7 +110,7 @@ const server = app.listen(PORT, async () => {
   console.log(`[PolicyShield] Running startup recovery...`);
   try {
     const { resolveUnknownExecution } = await import('./gateway/orchestrator');
-    const unknownActions = db.prepare(`SELECT intent_id FROM actions WHERE state = 'EXECUTION_UNKNOWN'`).all() as { intent_id: string }[];
+    const unknownActions = await db.prepare(`SELECT intent_id FROM actions WHERE state = 'EXECUTION_UNKNOWN'`).all() as { intent_id: string }[];
     
     if (unknownActions.length > 0) {
       console.log(`[PolicyShield] Found ${unknownActions.length} actions in EXECUTION_UNKNOWN state. Attempting recovery...`);

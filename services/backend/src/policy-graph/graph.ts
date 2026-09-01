@@ -17,15 +17,15 @@ export function storePolicies(graph: PolicyGraph): void {
   );
 }
 
-export function getPolicies(merchantId: string, version?: string): PolicyGraph | null {
+export async function getPolicies(merchantId: string, version?: string): Promise<PolicyGraph | null> {
   const db = getDb();
   let row;
   
   if (version) {
-    row = db.prepare('SELECT * FROM policy_versions WHERE merchant_id = ? AND version = ?').get(merchantId, version);
+    row = await db.prepare('SELECT * FROM policy_versions WHERE merchant_id = ? AND version = ?').get(merchantId, version);
   } else {
     // Get latest
-    row = db.prepare('SELECT * FROM policy_versions WHERE merchant_id = ? ORDER BY id DESC LIMIT 1').get(merchantId);
+    row = await db.prepare('SELECT * FROM policy_versions WHERE merchant_id = ? ORDER BY id DESC LIMIT 1').get(merchantId);
   }
 
   if (!row) return null;

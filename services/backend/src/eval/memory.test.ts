@@ -9,11 +9,11 @@ describe('Agent Memory & Context', () => {
 
   beforeEach(() => {
     db = getDb();
-    db.prepare('DELETE FROM buyer_memory').run();
-    db.prepare('DELETE FROM intents').run();
-    db.prepare('DELETE FROM agent_runs').run();
-    db.prepare('DELETE FROM actions').run();
-    db.prepare('DELETE FROM audit_events').run();
+    await db.prepare('DELETE FROM buyer_memory').run();
+    await db.prepare('DELETE FROM intents').run();
+    await db.prepare('DELETE FROM agent_runs').run();
+    await db.prepare('DELETE FROM actions').run();
+    await db.prepare('DELETE FROM audit_events').run();
   });
 
   it('1 & 12: Persistence & Explicit preference update', async () => {
@@ -71,7 +71,7 @@ describe('Agent Memory & Context', () => {
 
   it('3: Concurrent write conflict (Optimistic Concurrency)', () => {
     updateBuyerMemory(db, 'cust_c', 'merchant_c', 'k1', 'v1');
-    const existing = db.prepare('SELECT memory_version FROM buyer_memory WHERE customer_id=? AND merchant_id=?').get('cust_c', 'merchant_c');
+    const existing = await db.prepare('SELECT memory_version FROM buyer_memory WHERE customer_id=? AND merchant_id=?').get('cust_c', 'merchant_c');
     
     // Stale write
     const res = updateBuyerMemory(db, 'cust_c', 'merchant_c', 'k2', 'v2', existing.memory_version - 1);
@@ -102,7 +102,7 @@ describe('Agent Memory & Context', () => {
 
   it('7: Memory DB failure is safe', async () => {
     // Drop table temporarily to simulate failure
-    db.prepare('DROP TABLE buyer_memory').run();
+    await db.prepare('DROP TABLE buyer_memory').run();
     try {
       const context = await getCommerceContext({
         intent_id: uuidv4(),
@@ -174,7 +174,7 @@ describe('Agent Memory & Context', () => {
       customer_id: 'cust_cfl'
     } as any);
 
-    const events = db.prepare('SELECT * FROM audit_events WHERE intent_id = ? AND event_type = ?').all('intent_123', 'MEMORY_CONFLICT_DETECTED');
+    const events = await db.prepare('SELECT * FROM audit_events WHERE intent_id = ? AND event_type = ?').all('intent_123', 'MEMORY_CONFLICT_DETECTED');
     expect(events.length).toBe(1);
   });
 });

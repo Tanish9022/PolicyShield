@@ -15,24 +15,29 @@ router.post('/', async (req, res, next) => {
   try {
     const input = BuyerIntentInputSchema.parse(req.body);
     
-    // Explicitly enforce that the requested merchant matches the authenticated context
-    if (input.merchant_id !== req.auth!.merchantId) {
-      return res.status(403).json({ error: 'Forbidden cross-merchant access', request_id: req.headers['x-request-id'] });
-    }
-    
+    // merchant_id is always derived from auth context (never from body)
+    // This prevents cross-merchant attacks and removes the body/auth mismatch bug
     const intent: IntentRequest = {
       request_id: req.headers['x-request-id'] as any,
       intent_id: uuidv4() as any,
-      merchant_id: req.auth!.merchantId as any, // Derive from auth context, not body
+      merchant_id: req.auth!.merchantId as any,
       buyer_input: input.buyer_input,
-      customer_id: req.auth!.customerId, // Derive from auth context
+      customer_id: req.auth!.customerId,
       received_at: new Date().toISOString()
     };
     
-    // Process intent through the gateway
-    const result = await processIntent(intent);
+    const agentRunId = uuidv4();
     
-    res.json(result);
+    // Process intent through the gateway in the background
+    processIntent(intent, agentRunId).catch(err => {
+      console.error(`[Background Orchestration Failed] for run ${agentRunId}:`, err);
+    });
+    
+    res.status(202).json({
+      run_id: agentRunId,
+      intent_id: intent.intent_id,
+      state: 'RUNNING'
+    });
   } catch (err) {
     next(err);
   }

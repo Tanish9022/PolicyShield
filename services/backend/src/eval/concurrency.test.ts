@@ -23,7 +23,7 @@ describe('Concurrency Tests', () => {
     
     // Explicitly set it to VALIDATED to simulate it being ready to execute
     const db = getDb();
-    db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(actionId);
+    await db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(actionId);
     
     // 2. Try 10 concurrent executions
     const attempts = 10;
@@ -63,7 +63,7 @@ describe('Concurrency Tests', () => {
     expect(result2.action.action_id).toBe(result1.action.action_id);
 
     // 3. Mark the action as completed in DB to test execution-level idempotency
-    db.prepare("UPDATE actions SET state = 'VERIFIED_SUCCESS' WHERE action_id = ?").run(result1.action.action_id);
+    await db.prepare("UPDATE actions SET state = 'VERIFIED_SUCCESS' WHERE action_id = ?").run(result1.action.action_id);
 
     // 4. Executing an already executed action must throw immediately.
     // Enforced in executor.ts at the start of executeAction().

@@ -1,6 +1,9 @@
 import { storePolicies } from '../policy-graph/graph';
 import { PolicyGraph } from '@policyshield/shared';
 import { v4 as uuidv4 } from 'uuid';
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.join(__dirname, '../../../../.env') });
 
 const graph: PolicyGraph = {
   merchant_id: 'merchant_1',
@@ -35,19 +38,24 @@ const graph: PolicyGraph = {
   ]
 };
 
-storePolicies(graph);
-console.log('Seeded policies for merchant_1');
+import { getDb, closeDb } from './client';
 
-import { getDb } from './client';
+async function seed() {
+  await storePolicies(graph);
+  console.log('Seeded policies for merchant_1');
 
-const db = getDb();
-db.prepare(`INSERT OR REPLACE INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_macbook', 'merchant_1', 'MacBook Pro M3', 150000, 'INR')`).run();
-db.prepare(`INSERT OR REPLACE INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_dell', 'merchant_1', 'Dell XPS 15', 69999, 'INR')`).run();
-db.prepare(`INSERT OR REPLACE INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_asus', 'merchant_1', 'Asus ZenBook', 68500, 'INR')`).run();
-db.prepare(`INSERT OR REPLACE INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_airpods', 'merchant_1', 'AirPods Pro', 24900, 'INR')`).run();
-db.prepare(`INSERT OR REPLACE INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_macbook', 'merchant_1', 10)`).run();
-db.prepare(`INSERT OR REPLACE INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_dell', 'merchant_1', 2)`).run();
-db.prepare(`INSERT OR REPLACE INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_asus', 'merchant_1', 7)`).run();
-db.prepare(`INSERT OR REPLACE INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_airpods', 'merchant_1', 50)`).run();
-console.log('Seeded Context DB (Products & Inventory)');
+  const db = getDb();
+  await db.prepare(`INSERT INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_macbook', 'merchant_1', 'MacBook Pro M3', 150000, 'INR') ON CONFLICT (product_id) DO NOTHING`).run();
+  await db.prepare(`INSERT INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_dell', 'merchant_1', 'Dell XPS 15', 69999, 'INR') ON CONFLICT (product_id) DO NOTHING`).run();
+  await db.prepare(`INSERT INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_asus', 'merchant_1', 'Asus ZenBook', 68500, 'INR') ON CONFLICT (product_id) DO NOTHING`).run();
+  await db.prepare(`INSERT INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_airpods', 'merchant_1', 'AirPods Pro', 24900, 'INR') ON CONFLICT (product_id) DO NOTHING`).run();
+  await db.prepare(`INSERT INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_macbook', 'merchant_1', 10) ON CONFLICT (product_id) DO NOTHING`).run();
+  await db.prepare(`INSERT INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_dell', 'merchant_1', 2) ON CONFLICT (product_id) DO NOTHING`).run();
+  await db.prepare(`INSERT INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_asus', 'merchant_1', 7) ON CONFLICT (product_id) DO NOTHING`).run();
+  await db.prepare(`INSERT INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_airpods', 'merchant_1', 50) ON CONFLICT (product_id) DO NOTHING`).run();
+  console.log('Seeded Context DB (Products & Inventory)');
+  
+  closeDb();
+}
 
+seed().catch(console.error);

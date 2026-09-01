@@ -19,13 +19,18 @@ declare global {
  * For this prototype, it uses safe DEV identities configured via environment variables.
  */
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-  // If no auth headers exist, use development default if configured (simulate login)
-  const defaultCustomer = process.env.NODE_ENV === 'test' ? undefined : (process.env.DEV_CUSTOMER_ID || 'CUST-001');
-  const defaultMerchant = process.env.NODE_ENV === 'test' ? undefined : (process.env.DEV_MERCHANT_ID || 'TECH_STARTUP');
+  // SSE (EventSource) cannot send custom headers — fall back to query params for stream endpoints
+  const headerMerchant = req.headers['x-merchant-id'] as string || req.query['x-merchant-id'] as string;
+  const headerCustomer  = req.headers['x-customer-id']  as string || req.query['x-customer-id']  as string;
+
+  // DEV_MERCHANT_ID defaults to 'merchant_1' to match seeded data
+  // DEV_CUSTOMER_ID defaults to 'cust_demo' to match seeded data
+  const defaultCustomer = process.env.NODE_ENV === 'test' ? undefined : (process.env.DEV_CUSTOMER_ID || 'cust_demo');
+  const defaultMerchant = process.env.NODE_ENV === 'test' ? undefined : (process.env.DEV_MERCHANT_ID || 'merchant_1');
 
   req.auth = {
-    customerId: req.headers['x-customer-id'] as string || defaultCustomer,
-    merchantId: req.headers['x-merchant-id'] as string || defaultMerchant
+    customerId: headerCustomer || defaultCustomer,
+    merchantId: headerMerchant || defaultMerchant
   };
 
   if (!req.auth.merchantId) {

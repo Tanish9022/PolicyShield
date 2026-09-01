@@ -17,7 +17,7 @@ describe('Receipt Architecture Tests', () => {
     
     db.prepare(`INSERT INTO intents (intent_id, request_id, merchant_id, buyer_input) VALUES (?, ?, ?, ?)`).run(intentId, uuidv4(), merchantId, 'mock input');
 
-    const policy = db.prepare('SELECT version FROM policy_versions WHERE merchant_id = ?').get(merchantId) as any;
+    const policy = await db.prepare('SELECT version FROM policy_versions WHERE merchant_id = ?').get(merchantId) as any;
     const policyVersion = policy ? policy.version : 'v1';
     
     db.prepare(`
@@ -36,7 +36,7 @@ describe('Receipt Architecture Tests', () => {
       JSON.stringify({ product_id: 'prod_airpods', currency: 'INR' })
     );
 
-    const action = db.prepare('SELECT * FROM actions WHERE action_id = ?').get(actionId) as any;
+    const action = await db.prepare('SELECT * FROM actions WHERE action_id = ?').get(actionId) as any;
     expect(action.external_receipt.length).toBeLessThanOrEqual(40);
     expect(action.external_receipt.startsWith('ps_')).toBe(true);
   });
@@ -49,7 +49,7 @@ describe('Receipt Architecture Tests', () => {
     
     db.prepare(`INSERT INTO intents (intent_id, request_id, merchant_id, buyer_input) VALUES (?, ?, ?, ?)`).run(intentId, uuidv4(), merchantId, 'mock input');
 
-    const policy = db.prepare('SELECT version FROM policy_versions WHERE merchant_id = ?').get(merchantId) as any;
+    const policy = await db.prepare('SELECT version FROM policy_versions WHERE merchant_id = ?').get(merchantId) as any;
     const policyVersion = policy ? policy.version : 'v1';
     
     db.prepare(`
@@ -103,7 +103,7 @@ describe('Receipt Architecture Tests', () => {
     
     db.prepare(`INSERT INTO intents (intent_id, request_id, merchant_id, buyer_input) VALUES (?, ?, ?, ?)`).run(intentId, uuidv4(), merchantId, 'mock input');
 
-    const policy = db.prepare('SELECT version FROM policy_versions WHERE merchant_id = ?').get(merchantId) as any;
+    const policy = await db.prepare('SELECT version FROM policy_versions WHERE merchant_id = ?').get(merchantId) as any;
     const policyVersion = policy ? policy.version : 'v1';
     
     db.prepare(`
@@ -132,7 +132,7 @@ describe('Receipt Architecture Tests', () => {
     const recoveryResult = await resolveUnknownExecution(intentId, tracer);
     expect(recoveryResult.status).toBe('VERIFIED_SUCCESS');
     
-    const action = db.prepare('SELECT state FROM actions WHERE action_id = ?').get(actionId) as any;
+    const action = await db.prepare('SELECT state FROM actions WHERE action_id = ?').get(actionId) as any;
     expect(action.state).toBe('VERIFIED_SUCCESS');
 
     (razorpay.RazorpayAdapter as any).fetchOrderByReceipt = originalFetch;

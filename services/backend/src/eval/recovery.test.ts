@@ -29,7 +29,7 @@ describe('Execution Recovery Tests', () => {
     
     expect(recoveryResult.status).toBe('VERIFIED_SUCCESS');
     
-    const action = db.prepare('SELECT state FROM actions WHERE action_id = ?').get(actionId) as any;
+    const action = await db.prepare('SELECT state FROM actions WHERE action_id = ?').get(actionId) as any;
     expect(action.state).toBe('VERIFIED_SUCCESS');
 
     // Restore original mock
@@ -54,7 +54,7 @@ describe('Execution Recovery Tests', () => {
     
     expect(recoveryResult.status).toBe('VERIFIED_FAILURE');
     
-    const action = db.prepare('SELECT state FROM actions WHERE action_id = ?').get(actionId) as any;
+    const action = await db.prepare('SELECT state FROM actions WHERE action_id = ?').get(actionId) as any;
     expect(action.state).toBe('VERIFIED_FAILURE');
 
     (razorpay.RazorpayAdapter as any).fetchOrderByReceipt = originalFetch;

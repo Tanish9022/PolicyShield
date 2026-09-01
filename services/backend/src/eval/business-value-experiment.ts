@@ -62,7 +62,7 @@ async function runAIBuyerSession(intent: IntentRequest, db: any): Promise<Experi
     
     // In our simulation (STUB_AI), if the input wants 20% but max is 5%, it adapts to 5% and checkout happens.
     // We check the DB to see how many adaptations occurred.
-    const agentRun = db.prepare('SELECT * FROM agent_runs WHERE intent_id = ?').get(intent.intent_id);
+    const agentRun = await db.prepare('SELECT * FROM agent_runs WHERE intent_id = ?').get(intent.intent_id);
     
     let completed = false;
     let adaptation_attempts = 0;
@@ -114,10 +114,10 @@ async function main() {
   const results: ExperimentResult[] = [];
   
   // Clear tables for clean run
-  db.prepare('DELETE FROM audit_events').run();
-  db.prepare('DELETE FROM agent_runs').run();
-  db.prepare('DELETE FROM actions').run();
-  db.prepare('DELETE FROM intents').run();
+  await db.prepare('DELETE FROM audit_events').run();
+  await db.prepare('DELETE FROM agent_runs').run();
+  await db.prepare('DELETE FROM actions').run();
+  await db.prepare('DELETE FROM intents').run();
 
   // Seed Policies and Products for merchant_live_test
   const { storePolicies } = require('../policy-graph/graph');

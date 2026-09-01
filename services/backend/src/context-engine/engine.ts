@@ -6,8 +6,8 @@ export async function getCommerceContext(intent: IntentRequest): Promise<Commerc
   const customer = CUSTOMERS.find(c => c.customer_id === intent.customer_id) || null;
   const db = getDb();
   
-  const products = db.prepare(`SELECT * FROM products WHERE merchant_id = ?`).all(intent.merchant_id);
-  const dbInventory = db.prepare(`SELECT * FROM inventory WHERE merchant_id = ?`).all(intent.merchant_id) as any[];
+  const products = await db.prepare(`SELECT * FROM products WHERE merchant_id = ?`).all(intent.merchant_id);
+  const dbInventory = await db.prepare(`SELECT * FROM inventory WHERE merchant_id = ?`).all(intent.merchant_id) as any[];
   
   // Transform db inventory and prices to map
   const inventory: Record<string, number> = {};
@@ -21,7 +21,7 @@ export async function getCommerceContext(intent: IntentRequest): Promise<Commerc
   }
   let buyer_memory: any = undefined;
   try {
-    const memoryRow = intent.customer_id ? db.prepare(`SELECT * FROM buyer_memory WHERE customer_id = ? AND merchant_id = ?`).get(intent.customer_id, intent.merchant_id) as any : null;
+    const memoryRow = intent.customer_id ? await db.prepare(`SELECT * FROM buyer_memory WHERE customer_id = ? AND merchant_id = ?`).get(intent.customer_id, intent.merchant_id) as any : null;
     if (memoryRow) {
       buyer_memory = {
         customer_id: memoryRow.customer_id,

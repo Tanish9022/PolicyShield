@@ -23,12 +23,12 @@ describe('JIT Re-validation Tests', () => {
     const actionId = result.action.action_id;
 
     const db = getDb();
-    db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(actionId);
+    await db.prepare("UPDATE actions SET state = 'VALIDATED' WHERE action_id = ?").run(actionId);
 
     // 2. Mutate state (change price to trigger approval threshold or policy mismatch)
     // Actually, if we just change price, the original parameters say price was X. 
     // JIT fetches current context. We will change price to 200000.
-    db.prepare("UPDATE products SET price = 200000 WHERE product_id = 'prod_airpods'").run();
+    await db.prepare("UPDATE products SET price = 200000 WHERE product_id = 'prod_airpods'").run();
 
     // 3. Checkout
     await expect(checkoutAction(intent.intent_id)).rejects.toThrow(/JIT/);

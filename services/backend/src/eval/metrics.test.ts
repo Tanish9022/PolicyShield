@@ -24,8 +24,8 @@ describe('Metrics Integrity Tests', () => {
     );
     
     // Retrieve the metrics (replicating the logic in generate-final-report.ts)
-    const traces = db.prepare('SELECT * FROM traces').all() as any[];
-    const actions = db.prepare('SELECT * FROM actions').all() as any[];
+    const traces = await db.prepare('SELECT * FROM traces').all() as any[];
+    const actions = await db.prepare('SELECT * FROM actions').all() as any[];
     
     const intentIds = new Set(traces.map(t => t.intent_id));
     

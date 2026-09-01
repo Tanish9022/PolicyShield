@@ -2,21 +2,21 @@ import { describe, it, expect, vi } from 'vitest';
 import { getDb } from '../db/client';
 import { v4 as uuidv4 } from 'uuid';
 import { processIntent, checkoutAction } from '../gateway/orchestrator';
-import * as reasoning from '../agent/reasoning';
 import * as negotiation from '../agent/negotiation';
 import * as discovery from '../agent/discovery';
 import * as comparison from '../agent/comparison';
 import * as razorpay from '../execution/razorpay';
 import { IntentRequest } from '@policyshield/shared';
+import { getAgentEvents } from '../agent/events';
 
-describe('AI Buyer E2E Flow', () => {
-  const merchantId = 'merchant_1'; // assuming policy exists for merchant_1
+describe('Agent Events Trace (Event-Driven Architecture)', () => {
+  const merchantId = 'merchant_1'; 
 
-  it('Full Flow: DISCOVER -> COMPARE -> NEGOTIATE -> POLICY_REJECT -> ADAPT -> READY_FOR_CHECKOUT -> CONFIRM -> JIT -> IDEMPOTENCY -> RAZORPAY -> VERIFY', async () => {
+  it('proves the backend persists an immutable, sequential event stream for the UI', async () => {
     const db = getDb();
     const requestId = uuidv4();
-    const intentId = `eval_gemini_${uuidv4()}`;
-    const buyerInput = 'I want airpods and a student discount';
+    const intentId = `eval_events_${uuidv4()}`;
+    const buyerInput = 'I want a phone with a small discount';
 
     const intent: IntentRequest = {
       request_id: requestId as any,
@@ -36,24 +36,23 @@ describe('AI Buyer E2E Flow', () => {
       reasoning_evidence: ['Selected airpods']
     });
 
-    // Mock negotiation to first propose an invalid discount, then adapt to a valid one
     let callCount = 0;
     const reasoningSpy = vi.spyOn(negotiation, 'proposeAction').mockImplementation(async () => {
       callCount++;
       if (callCount === 1) {
-        // Attempt 1: Malicious / Too high discount
+        // Attempt 1: Too high discount -> triggers POLICY_REJECT -> ADAPT
         return {
           proposed_action: {
             type: 'CREATE_ORDER',
             product_id: 'prod_airpods',
             amount: 10,
             currency: 'INR',
-            applied_promotions: ['PROMO_STUDENT', 'PROMO_EMPLOYEE'] // Too many promos
+            applied_promotions: ['PROMO_EXCESSIVE'] 
           },
           reasoning: 'I applied all promos'
         };
       } else {
-        // Attempt 2: Adapted valid request
+        // Attempt 2: Valid
         return {
           proposed_action: {
             type: 'CREATE_ORDER',
@@ -71,28 +70,48 @@ describe('AI Buyer E2E Flow', () => {
       return { id: `order_${uuidv4()}`, amount, currency, receipt };
     });
 
-    // 1. Process Intent (DISCOVER -> COMPARE -> NEGOTIATE -> POLICY_REJECT -> ADAPT -> READY_FOR_CHECKOUT)
-    const processResult = await processIntent(intent);
+    // 1. Process Intent
+    const runId = uuidv4();
+    const processResult = await processIntent(intent, runId);
     
     expect(processResult.gate_decision).toBe('APPROVE');
-    expect(processResult.action.state).toBe('VALIDATED');
-    expect(callCount).toBeGreaterThanOrEqual(2); // Should have retried at least once
+    
+    // 2. Checkout
+    await checkoutAction(intentId);
 
-    const agentRun = await db.prepare('SELECT * FROM agent_runs WHERE intent_id = ?').get(intentId) as any;
-    expect(agentRun.state).toBe('READY_FOR_CHECKOUT');
-    expect(agentRun.current_step).toBe('CHECKOUT_PENDING');
-    expect(agentRun.adaptation_count).toBeGreaterThan(0);
+    // 3. Verify event stream
+    const events = getAgentEvents(runId, 0);
+    
+    expect(events.length).toBeGreaterThan(0);
+    
+    // Check sequential integrity
+    events.forEach((e: any, idx: number) => {
+      expect(e.sequence).toBe(idx + 1); // No gaps
+      expect(e.run_id).toBe(runId);
+    });
 
-    // 2. Checkout Action (CONFIRM -> JIT -> IDEMPOTENCY -> RAZORPAY -> VERIFY)
-    const checkoutResult = await checkoutAction(intentId);
-
-    expect(checkoutResult.state).toBe('VERIFIED_SUCCESS');
-    expect(checkoutResult.external_receipt).toBeDefined();
-    expect(checkoutResult.external_receipt.startsWith('ps_')).toBe(true);
-
-    const agentRunFinal = await db.prepare('SELECT * FROM agent_runs WHERE intent_id = ?').get(intentId) as any;
-    expect(agentRunFinal.state).toBe('COMPLETED');
-    expect(agentRunFinal.current_step).toBe('VERIFIED');
+    const eventTypes = events.map((e: any) => e.event_type);
+    
+    // We expect a full trace
+    expect(eventTypes).toEqual([
+      'INTENT_RECEIVED',
+      'DISCOVER',
+      'COMPARE',
+      'PROPOSE',
+      'POLICY_REJECT',
+      'ADAPT',
+      'PROPOSE',
+      'POLICY_APPROVE',
+      'JIT_VALIDATE',
+      'PAYMENT_CREATE',
+      'VERIFIED_SUCCESS'
+    ]);
+    
+    // Verify payload of POLICY_REJECT
+    const rejectEvent = events.find((e: any) => e.event_type === 'POLICY_REJECT') as any;
+    const rejectPayload = JSON.parse(rejectEvent.payload_json);
+    expect(rejectPayload.proposal).toBeDefined();
+    expect(rejectPayload.reasons).toBeDefined();
 
     // Restore Mocks
     discoverySpy.mockRestore();
