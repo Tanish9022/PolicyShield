@@ -70,7 +70,7 @@ function getEventMeta(event: string) {
 }
 
 function StateChip({ state }: { state: string }) {
-  const s = state.toLowerCase();
+  const s = (state ?? '').toLowerCase();
   const isGood = ['completed', 'verified_success', 'ready_for_checkout'].some(x => s.includes(x));
   const isBad  = ['failed', 'blocked'].some(x => s.includes(x));
   const isBusy = !isGood && !isBad;
