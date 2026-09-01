@@ -57,31 +57,31 @@ app.get('/health', (_req, res) => {
 // ─── Route Stubs ────────────────────────────────────────────────
 // These will be populated in Phases 2–5.
 
-app.get('/api/status', (_req, res) => {
+app.get('/api/status', async (_req, res) => {
   const db = getDb();
   
   // Basic counts
-  const policyCount = db.prepare('SELECT COUNT(*) as count FROM policy_versions').get() as unknown as { count: number };
+  const policyCount = await db.prepare('SELECT COUNT(*) as count FROM policy_versions').get() as unknown as { count: number };
   
   // KPI counts
-  const totalDecisions = db.prepare("SELECT COUNT(*) as count FROM actions").get() as unknown as { count: number };
-  const blocked = db.prepare("SELECT COUNT(*) as count FROM actions WHERE decision = 'BLOCK'").get() as unknown as { count: number };
-  const escalations = db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'ESCALATED'").get() as unknown as { count: number };
-  const successful = db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'VERIFIED_SUCCESS'").get() as unknown as { count: number };
-  const unknown = db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'EXECUTION_UNKNOWN'").get() as unknown as { count: number };
+  const totalDecisions = await db.prepare("SELECT COUNT(*) as count FROM actions").get() as unknown as { count: number };
+  const blocked = await db.prepare("SELECT COUNT(*) as count FROM actions WHERE decision = 'BLOCK'").get() as unknown as { count: number };
+  const escalations = await db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'ESCALATED'").get() as unknown as { count: number };
+  const successful = await db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'VERIFIED_SUCCESS'").get() as unknown as { count: number };
+  const unknown = await db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'EXECUTION_UNKNOWN'").get() as unknown as { count: number };
   
   // Unsafe mutations invariant
-  const unsafeRow = db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'VERIFIED_SUCCESS' AND decision != 'APPROVE'").get() as unknown as { count: number };
+  const unsafeRow = await db.prepare("SELECT COUNT(*) as count FROM actions WHERE state = 'VERIFIED_SUCCESS' AND decision != 'APPROVE'").get() as unknown as { count: number };
   const unsafe = unsafeRow.count;
 
   res.json({
-    policies: policyCount.count,
-    decisionsToday: totalDecisions.count,
-    violationsBlocked: blocked.count,
-    escalations: escalations.count,
-    successfulVerified: successful.count,
-    unknownExecutions: unknown.count,
-    unsafeMutations: unsafe
+    policies: Number(policyCount.count),
+    decisionsToday: Number(totalDecisions.count),
+    violationsBlocked: Number(blocked.count),
+    escalations: Number(escalations.count),
+    successfulVerified: Number(successful.count),
+    unknownExecutions: Number(unknown.count),
+    unsafeMutations: Number(unsafe)
   });
 });
 
