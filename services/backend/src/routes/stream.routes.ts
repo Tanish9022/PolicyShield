@@ -25,7 +25,17 @@ router.get('/:runId/stream', async (req, res, next) => {
     const db = getDb();
     const runId = req.params.runId;
 
-    const run = await db.prepare('SELECT * FROM agent_runs WHERE agent_run_id = ?').get(runId) as any;
+    let run = await db.prepare('SELECT * FROM agent_runs WHERE agent_run_id = ?').get(runId) as any;
+    
+    // Race condition mitigation: The background worker might still be inserting the run. Wait up to 3 seconds.
+    if (!run) {
+      for (let i = 0; i < 15; i++) {
+        await new Promise(r => setTimeout(r, 200));
+        run = await db.prepare('SELECT * FROM agent_runs WHERE agent_run_id = ?').get(runId) as any;
+        if (run) break;
+      }
+    }
+
     if (!run) {
       return res.status(404).json({ error: 'Run not found' });
     }
