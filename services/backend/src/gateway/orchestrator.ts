@@ -81,6 +81,13 @@ export async function processIntent(intent: IntentRequest, agentRunId: string = 
   await appendAgentEvent(agentRunId, 'DISCOVER', { candidates_count: candidates.length });
 
   if (candidates.length === 0) {
+    const actionId = uuidv4();
+    const idempKey = `idemp_${intent.intent_id}_disc_fail`;
+    await db.prepare(`
+      INSERT INTO actions (action_id, intent_id, merchant_id, idempotency_key, action_type, state, decision, policy_version, reason_codes_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(actionId, intent.intent_id, intent.merchant_id, idempKey, 'HANDOFF', 'ESCALATED', 'ESCALATE', 'latest', JSON.stringify(['NO_CANDIDATES_FOUND']));
+
     await db.prepare(`UPDATE agent_runs SET state = 'ESCALATED', current_step = 'FAILED_DISCOVERY', completed_at = ? WHERE agent_run_id = ?`).run(new Date().toISOString(), agentRunId);
     tracer.completeTrace('ESCALATED');
     return { status: 'NO_MATCH', reason: 'No candidates found.' };
@@ -95,6 +102,13 @@ export async function processIntent(intent: IntentRequest, agentRunId: string = 
   await appendAgentEvent(agentRunId, 'COMPARE', { decision });
 
   if (decision.decision !== 'SELECT' || !decision.selected_product_id) {
+    const actionId = uuidv4();
+    const idempKey = `idemp_${intent.intent_id}_comp_fail`;
+    await db.prepare(`
+      INSERT INTO actions (action_id, intent_id, merchant_id, idempotency_key, action_type, state, decision, policy_version, reason_codes_json, evidence_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(actionId, intent.intent_id, intent.merchant_id, idempKey, 'HANDOFF', 'ESCALATED', 'ESCALATE', 'latest', JSON.stringify(['FAILED_COMPARISON']), JSON.stringify(decision.reasoning_evidence || []));
+
     await db.prepare(`UPDATE agent_runs SET state = 'ESCALATED', current_step = 'FAILED_COMPARISON', completed_at = ? WHERE agent_run_id = ?`).run(new Date().toISOString(), agentRunId);
     tracer.completeTrace('ESCALATED');
     return { status: 'ESCALATED', reason: 'AI could not select a candidate.' };
