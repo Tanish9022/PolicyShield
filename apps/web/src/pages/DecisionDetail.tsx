@@ -9,6 +9,7 @@ export default function DecisionDetail() {
   const navigate = useNavigate();
   const [data, setData] = useState<{action: any, audit_events: any[]} | null>(null);
   const [loading, setLoading] = useState(true);
+  const [resolving, setResolving] = useState(false);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/decisions/${id}`)
@@ -24,6 +25,34 @@ export default function DecisionDetail() {
   if (!data) return <div className="p-8 text-rose-500">Decision not found.</div>;
 
   const { action, audit_events } = data;
+
+  const handleResolve = async (decision: 'APPROVE' | 'BLOCK') => {
+    if (resolving) return;
+    setResolving(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/decisions/${id}/resolve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-merchant-id': 'merchant_1'
+        },
+        body: JSON.stringify({ decision })
+      });
+      const result = await res.json();
+      if (res.ok) {
+        setData(prev => prev ? {
+          ...prev,
+          action: { ...prev.action, decision: result.decision, state: result.state }
+        } : null);
+      } else {
+        alert('Failed to resolve: ' + result.error);
+      }
+    } catch (e) {
+      alert('Error resolving action');
+    } finally {
+      setResolving(false);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl mx-auto pb-10">
@@ -191,11 +220,17 @@ export default function DecisionDetail() {
                   </div>
                   
                   <div className="mt-4 pt-4 border-t border-amber-900/30 flex space-x-3">
-                    <button className="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded border border-emerald-500/50 transition-colors text-xs font-semibold">
-                      Approve & Execute
+                    <button 
+                      onClick={() => handleResolve('APPROVE')}
+                      disabled={resolving}
+                      className="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded border border-emerald-500/50 transition-colors text-xs font-semibold disabled:opacity-50">
+                      {resolving ? 'Working...' : 'Approve & Execute'}
                     </button>
-                    <button className="px-3 py-1.5 bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 rounded border border-rose-500/50 transition-colors text-xs font-semibold">
-                      Reject Action
+                    <button 
+                      onClick={() => handleResolve('BLOCK')}
+                      disabled={resolving}
+                      className="px-3 py-1.5 bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 rounded border border-rose-500/50 transition-colors text-xs font-semibold disabled:opacity-50">
+                      {resolving ? 'Working...' : 'Reject Action'}
                     </button>
                   </div>
                 </div>

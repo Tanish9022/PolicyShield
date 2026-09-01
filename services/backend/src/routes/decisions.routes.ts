@@ -55,4 +55,42 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+router.post('/:id/resolve', async (req, res) => {
+  const db = getDb();
+  try {
+    const { decision } = req.body;
+    if (decision !== 'APPROVE' && decision !== 'BLOCK') {
+      return res.status(400).json({ error: 'Invalid decision', request_id: req.headers['x-request-id'] });
+    }
+
+    const state = decision === 'APPROVE' ? 'READY_FOR_CHECKOUT' : 'REJECTED';
+
+    const result = await db.prepare(`
+      UPDATE actions 
+      SET decision = ?, state = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE action_id = ? AND EXISTS (
+        SELECT 1 FROM intents i WHERE i.intent_id = actions.intent_id AND i.merchant_id = ?
+      )
+    `).run(decision, state, req.params.id, req.auth!.merchantId);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Action not found or unauthorized', request_id: req.headers['x-request-id'] });
+    }
+
+    // Add audit event for the manual override
+    const action = await db.prepare('SELECT intent_id FROM actions WHERE action_id = ?').get(req.params.id) as any;
+    if (action) {
+      await db.prepare(`
+        INSERT INTO audit_events 
+        (event_id, event_type, intent_id, action_id, decision, timestamp)
+        VALUES (?, 'MANUAL_OVERRIDE', ?, ?, ?, CURRENT_TIMESTAMP)
+      `).run(require('uuid').v4(), action.intent_id, req.params.id, decision);
+    }
+
+    res.json({ success: true, decision, state });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message, request_id: req.headers['x-request-id'] });
+  }
+});
+
 export default router;
