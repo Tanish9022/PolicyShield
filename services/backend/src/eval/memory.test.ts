@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 describe('Agent Memory & Context', () => {
   let db: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     db = getDb();
     await db.prepare('DELETE FROM buyer_memory').run();
     await db.prepare('DELETE FROM intents').run();
@@ -19,7 +19,7 @@ describe('Agent Memory & Context', () => {
   it('1 & 12: Persistence & Explicit preference update', async () => {
     const customerId = 'cust_mem_1';
     
-    extractAndPersistExplicitPreferences(db, {
+    await extractAndPersistExplicitPreferences(db, {
       intent_id: uuidv4(),
       request_id: uuidv4(),
       merchant_id: 'merchant_test',
@@ -39,7 +39,7 @@ describe('Agent Memory & Context', () => {
   });
 
   it('2: Freshness (new explicit preference overwrites old)', async () => {
-    updateBuyerMemory(db, 'cust_f', 'merchant_test', 'brand_preference', 'Lenovo');
+    await updateBuyerMemory(db, 'cust_f', 'merchant_test', 'brand_preference', 'Lenovo');
     
     // Explicit new preference overwrites it (actually, wait, my checkAndPersist prevents overwrite if conflict!
     // Ah, wait! The user said: "Current request wins. Do NOT rewrite memory unless the user explicitly confirms a new preference."
@@ -49,7 +49,7 @@ describe('Agent Memory & Context', () => {
     // If checkAndPersist doesn't rewrite, how does the agent know it's a new confirmed preference?
     // Let's just manually test the override behavior.)
     
-    extractAndPersistExplicitPreferences(db, {
+    await extractAndPersistExplicitPreferences(db, {
       intent_id: uuidv4(),
       request_id: uuidv4(),
       merchant_id: 'merchant_test',
@@ -69,26 +69,26 @@ describe('Agent Memory & Context', () => {
     expect(context.buyer_memory?.preferences['brand_preference']).toBe('Lenovo');
   });
 
-  it('3: Concurrent write conflict (Optimistic Concurrency)', () => {
-    updateBuyerMemory(db, 'cust_c', 'merchant_c', 'k1', 'v1');
+  it('3: Concurrent write conflict (Optimistic Concurrency)', async () => {
+    await updateBuyerMemory(db, 'cust_c', 'merchant_c', 'k1', 'v1');
     const existing = await db.prepare('SELECT memory_version FROM buyer_memory WHERE customer_id=? AND merchant_id=?').get('cust_c', 'merchant_c');
     
     // Stale write
-    const res = updateBuyerMemory(db, 'cust_c', 'merchant_c', 'k2', 'v2', existing.memory_version - 1);
+    const res = await updateBuyerMemory(db, 'cust_c', 'merchant_c', 'k2', 'v2', existing.memory_version - 1);
     expect(res).toBe(false);
   });
 
-  it('4 & 5: Preference size bound (Max 10 keys)', () => {
+  it('4 & 5: Preference size bound (Max 10 keys)', async () => {
     for (let i = 0; i < 10; i++) {
-      updateBuyerMemory(db, 'cust_limit', 'merchant_limit', `k${i}`, `v${i}`);
+      await updateBuyerMemory(db, 'cust_limit', 'merchant_limit', `k${i}`, `v${i}`);
     }
-    const res = updateBuyerMemory(db, 'cust_limit', 'merchant_limit', 'k10', 'v10');
+    const res = await updateBuyerMemory(db, 'cust_limit', 'merchant_limit', 'k10', 'v10');
     expect(res).toBe(false); // 11th key should be rejected
   });
 
   it('6: Reset/delete', async () => {
-    updateBuyerMemory(db, 'cust_r', 'merchant_r', 'k1', 'v1');
-    resetBuyerMemory(db, 'cust_r', 'merchant_r');
+    await updateBuyerMemory(db, 'cust_r', 'merchant_r', 'k1', 'v1');
+    await resetBuyerMemory(db, 'cust_r', 'merchant_r');
     
     const context = await getCommerceContext({
       intent_id: uuidv4(),
@@ -131,7 +131,7 @@ describe('Agent Memory & Context', () => {
   });
 
   it('8: Memory poisoning blocked', async () => {
-    extractAndPersistExplicitPreferences(db, {
+    await extractAndPersistExplicitPreferences(db, {
       intent_id: uuidv4(),
       request_id: uuidv4(),
       merchant_id: 'merchant_test',
@@ -150,7 +150,7 @@ describe('Agent Memory & Context', () => {
   });
 
   it('9 & 10: Customer and Merchant isolation', async () => {
-    updateBuyerMemory(db, 'cust_a', 'merchant_1', 'budget', 100);
+    await updateBuyerMemory(db, 'cust_a', 'merchant_1', 'budget', 100);
     
     const contextCustB = await getCommerceContext({
       intent_id: uuidv4(), request_id: uuidv4(), merchant_id: 'merchant_1', buyer_input: 'hello', customer_id: 'cust_b'
@@ -164,9 +164,9 @@ describe('Agent Memory & Context', () => {
   });
 
   it('11: Conflict detection', async () => {
-    updateBuyerMemory(db, 'cust_cfl', 'merchant_cfl', 'budget_preference', 65000);
+    await updateBuyerMemory(db, 'cust_cfl', 'merchant_cfl', 'budget_preference', 65000);
     
-    extractAndPersistExplicitPreferences(db, {
+    await extractAndPersistExplicitPreferences(db, {
       intent_id: 'intent_123',
       request_id: uuidv4(),
       merchant_id: 'merchant_cfl',

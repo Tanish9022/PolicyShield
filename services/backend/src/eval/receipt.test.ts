@@ -9,7 +9,7 @@ import { TelemetryTracer } from '../gateway/telemetry';
 describe('Receipt Architecture Tests', () => {
   const merchantId = 'merchant_1';
 
-  it('A. external_receipt length <= 40', () => {
+  it('A. external_receipt length <= 40', async () => {
     const db = getDb();
     const actionId = uuidv4();
     const intentId = uuidv4() as any;

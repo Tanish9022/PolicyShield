@@ -11,7 +11,7 @@ export async function updateBuyerMemory(
   newPreferenceValue: any,
   expected_version?: number
 ): Promise<boolean> {
-  const existing = await db.prepare(`SELECT * FROM buyer_memory WHERE customer_id = $1 AND merchant_id = $2`).get(customer_id, merchant_id);
+  const existing = await db.prepare(`SELECT * FROM buyer_memory WHERE customer_id = ? AND merchant_id = ?`).get(customer_id, merchant_id);
   
   if (existing) {
     if (expected_version !== undefined && existing.memory_version !== expected_version) {
@@ -31,11 +31,12 @@ export async function updateBuyerMemory(
     
     const res = await db.prepare(`
       UPDATE buyer_memory 
-      SET preferences_json = $1, memory_version = memory_version + 1, last_updated = CURRENT_TIMESTAMP
-      WHERE customer_id = $2 AND merchant_id = $3 AND memory_version = $4
+      SET preferences_json = ?, memory_version = memory_version + 1, last_updated = CURRENT_TIMESTAMP
+      WHERE customer_id = ? AND merchant_id = ? AND memory_version = ?
     `).run(serialized, customer_id, merchant_id, existing.memory_version);
     
-    return (res as any).rowCount > 0;
+    const changes = (res as any).rowCount ?? (res as any).changes;
+    return changes > 0;
   } else {
     const prefs = { [newPreferenceKey]: newPreferenceValue };
     const serialized = JSON.stringify(prefs);
@@ -44,7 +45,7 @@ export async function updateBuyerMemory(
     try {
       await db.prepare(`
         INSERT INTO buyer_memory (customer_id, merchant_id, preferences_json, negotiation_history_json, memory_version, created_at, last_updated)
-        VALUES ($1, $2, $3, '[]', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES (?, ?, ?, '[]', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `).run(customer_id, merchant_id, serialized);
       return true;
     } catch (e) {
@@ -54,15 +55,15 @@ export async function updateBuyerMemory(
 }
 
 export async function resetBuyerMemory(db: any, customer_id: string, merchant_id: string) {
-  await db.prepare(`DELETE FROM buyer_memory WHERE customer_id = $1 AND merchant_id = $2`).run(customer_id, merchant_id);
+  await db.prepare(`DELETE FROM buyer_memory WHERE customer_id = ? AND merchant_id = ?`).run(customer_id, merchant_id);
 }
 
 async function checkAndPersist(db: any, customer_id: string, merchant_id: string, intent_id: string, key: string, newValue: any, version?: number) {
-  const existing = await db.prepare(`SELECT preferences_json FROM buyer_memory WHERE customer_id = $1 AND merchant_id = $2`).get(customer_id, merchant_id);
+  const existing = await db.prepare(`SELECT preferences_json FROM buyer_memory WHERE customer_id = ? AND merchant_id = ?`).get(customer_id, merchant_id);
   if (existing) {
     const prefs = JSON.parse(existing.preferences_json);
     if (prefs[key] !== undefined && prefs[key] !== newValue) {
-      await db.prepare(`INSERT INTO audit_events (event_id, event_type, intent_id, action_id, timestamp, metadata_json) VALUES ($1, 'MEMORY_CONFLICT_DETECTED', $2, '', CURRENT_TIMESTAMP, $3)`).run(
+      await db.prepare(`INSERT INTO audit_events (event_id, event_type, intent_id, action_id, timestamp, metadata_json) VALUES (?, 'MEMORY_CONFLICT_DETECTED', ?, '', CURRENT_TIMESTAMP, ?)`).run(
         require('uuid').v4(), intent_id, JSON.stringify({ key, old: prefs[key], new: newValue })
       );
       return; 
@@ -76,7 +77,7 @@ export async function extractAndPersistExplicitPreferences(db: any, intent: Inte
   
   const input = intent.buyer_input.toLowerCase();
   
-  const existing = await db.prepare(`SELECT memory_version FROM buyer_memory WHERE customer_id = $1 AND merchant_id = $2`).get(intent.customer_id, intent.merchant_id);
+  const existing = await db.prepare(`SELECT memory_version FROM buyer_memory WHERE customer_id = ? AND merchant_id = ?`).get(intent.customer_id, intent.merchant_id);
   const v = existing ? existing.memory_version : undefined;
   
   if (input.includes('prefer lenovo') || input.includes('prefers lenovo')) {

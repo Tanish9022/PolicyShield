@@ -15,8 +15,11 @@ router.post('/', async (req, res, next) => {
   try {
     const input = BuyerIntentInputSchema.parse(req.body);
     
-    // merchant_id is always derived from auth context (never from body)
-    // This prevents cross-merchant attacks and removes the body/auth mismatch bug
+    // Enforce strict tenant isolation: if payload specifies a merchant_id, it MUST match auth
+    if (input.merchant_id && input.merchant_id !== req.auth!.merchantId) {
+      return res.status(403).json({ error: 'Forbidden: Tenant isolation mismatch' });
+    }
+    
     const intent: IntentRequest = {
       request_id: req.headers['x-request-id'] as any,
       intent_id: uuidv4() as any,

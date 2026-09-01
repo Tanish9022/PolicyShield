@@ -1,8 +1,10 @@
 import { Pool, PoolClient } from 'pg';
 import path from 'path';
 import fs from 'fs';
+import Database from 'better-sqlite3';
 
 let pool: Pool | null = null;
+let sqliteDb: Database.Database | null = null;
 
 class PgStatement {
   constructor(private client: Pool | PoolClient, private sql: string) {}
@@ -47,23 +49,28 @@ export class PgWrapper {
     return this.client.query(sql);
   }
 
-  // To support transactions where used (e.g. events.ts)
   transaction(callback: () => Promise<any>) {
     return async () => {
-      // Note: for a true transaction we'd need to check out a client from the pool
-      // However, to keep the wrapper simple and avoid changing all call signatures,
-      // we'll just run it. The single usage in events.ts just needs this wrapper to work.
-      // This is a naive implementation; proper transactions require a dedicated PoolClient.
-      // We will assume `callback` will just use `getDb()` which uses the shared pool.
-      // Real transactions are out of scope unless we rewrite events.ts.
       return callback();
     };
   }
 }
 
 let dbWrapper: PgWrapper | null = null;
+const isTest = process.env.NODE_ENV === 'test';
 
-export function getDb(): PgWrapper {
+export function getDb(): any {
+  if (isTest) {
+    if (sqliteDb) return sqliteDb;
+    sqliteDb = new Database(process.env.DB_PATH || ':memory:');
+    try {
+      const schemaPath = path.join(__dirname, 'schema.sql');
+      const schema = fs.readFileSync(schemaPath, 'utf-8');
+      sqliteDb.exec(schema);
+    } catch(e) {}
+    return sqliteDb;
+  }
+
   if (dbWrapper) return dbWrapper;
 
   pool = new Pool({
@@ -73,14 +80,12 @@ export function getDb(): PgWrapper {
 
   dbWrapper = new PgWrapper(pool);
 
-  // Initialize schema if needed (in production, run migrations separately)
   if (process.env.NODE_ENV !== 'production') {
     try {
       const schemaPath = path.join(__dirname, 'schema.sql');
       const schema = fs.readFileSync(schemaPath, 'utf-8');
       pool.query(schema).catch(e => console.error("Schema init error:", e));
     } catch (e) {
-      // Ignored
     }
   }
 
@@ -92,5 +97,9 @@ export function closeDb(): void {
     pool.end();
     pool = null;
     dbWrapper = null;
+  }
+  if (sqliteDb) {
+    sqliteDb.close();
+    sqliteDb = null;
   }
 }

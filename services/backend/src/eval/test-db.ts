@@ -4,7 +4,7 @@ import { storePolicies } from '../policy-graph/graph';
 import { PolicyGraph } from '@policyshield/shared';
 import fs from 'fs';
 import path from 'path';
-import { getDb } from '../db/client';
+
 
 let testDbPath: string | null = null;
 
@@ -23,24 +23,26 @@ export function teardownTestDatabase() {
   }
 }
 
-export function resetTestDatabase() {
+export async function resetTestDatabase() {
   const db = getDb();
   // Delete in correct order to avoid foreign key constraints
   await db.prepare('DELETE FROM metric_events').run();
   await db.prepare('DELETE FROM traces').run();
   await db.prepare('DELETE FROM audit_events').run();
   await db.prepare('DELETE FROM webhook_events').run();
+  await db.prepare('DELETE FROM agent_events').run();
   await db.prepare('DELETE FROM agent_runs').run();
   await db.prepare('DELETE FROM actions').run();
   await db.prepare('DELETE FROM intents').run();
+  await db.prepare('DELETE FROM buyer_memory').run();
   await db.prepare('DELETE FROM inventory').run();
   await db.prepare('DELETE FROM products').run();
   await db.prepare('DELETE FROM policy_versions').run();
   
-  seedTestDatabase();
+  await seedTestDatabase();
 }
 
-export function seedTestDatabase() {
+export async function seedTestDatabase() {
   const graph: PolicyGraph = {
     merchant_id: 'merchant_1',
     version: uuidv4() as any,
@@ -76,12 +78,12 @@ export function seedTestDatabase() {
   storePolicies(graph);
 
   const db = getDb();
-  db.prepare(`INSERT OR REPLACE INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_macbook', 'merchant_1', 'MacBook Pro M3', 150000, 'INR')`).run();
-  db.prepare(`INSERT OR REPLACE INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_dell', 'merchant_1', 'Dell XPS 15', 69999, 'INR')`).run();
-  db.prepare(`INSERT OR REPLACE INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_asus', 'merchant_1', 'Asus ZenBook', 68500, 'INR')`).run();
-  db.prepare(`INSERT OR REPLACE INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_airpods', 'merchant_1', 'AirPods Pro', 24900, 'INR')`).run();
-  db.prepare(`INSERT OR REPLACE INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_macbook', 'merchant_1', 10)`).run();
-  db.prepare(`INSERT OR REPLACE INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_dell', 'merchant_1', 2)`).run();
-  db.prepare(`INSERT OR REPLACE INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_asus', 'merchant_1', 7)`).run();
-  db.prepare(`INSERT OR REPLACE INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_airpods', 'merchant_1', 50)`).run();
+  await db.prepare(`INSERT OR REPLACE INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_macbook', 'merchant_1', 'MacBook Pro M3', 150000, 'INR')`).run();
+  await db.prepare(`INSERT OR REPLACE INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_dell', 'merchant_1', 'Dell XPS 15', 69999, 'INR')`).run();
+  await db.prepare(`INSERT OR REPLACE INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_asus', 'merchant_1', 'Asus ZenBook', 68500, 'INR')`).run();
+  await db.prepare(`INSERT OR REPLACE INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_airpods', 'merchant_1', 'AirPods Pro', 24900, 'INR')`).run();
+  await db.prepare(`INSERT OR REPLACE INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_macbook', 'merchant_1', 10)`).run();
+  await db.prepare(`INSERT OR REPLACE INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_dell', 'merchant_1', 2)`).run();
+  await db.prepare(`INSERT OR REPLACE INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_asus', 'merchant_1', 7)`).run();
+  await db.prepare(`INSERT OR REPLACE INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_airpods', 'merchant_1', 50)`).run();
 }

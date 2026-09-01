@@ -83,7 +83,8 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
     "UPDATE actions SET state = 'EXECUTING', updated_at = ? WHERE action_id = ? AND state IN ('VALIDATED', 'RETRY_ELIGIBLE')"
   ).run(new Date().toISOString(), actionId);
   
-  if ((updateResult as any).rowCount === 0) {
+  const changes = (updateResult as any).rowCount ?? (updateResult as any).changes;
+  if (changes === 0) {
     throw new Error(`Concurrent execution detected or invalid state for action ${actionId}`);
   }
 

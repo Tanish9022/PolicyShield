@@ -100,37 +100,42 @@ app.use(errorHandler);
 
 // ─── Start Server ───────────────────────────────────────────────
 
-const server = app.listen(PORT, async () => {
-  // Initialize the database on startup
-  const db = getDb();
-  console.log(`[PolicyShield] Backend running on http://localhost:${PORT}`);
-  console.log(`[PolicyShield] Health check: http://localhost:${PORT}/health`);
+let server: any;
+if (process.env.NODE_ENV !== 'test') {
+  server = app.listen(PORT, async () => {
+    // Initialize the database on startup
+    const db = getDb();
+    console.log(`[PolicyShield] Backend running on http://localhost:${PORT}`);
+    console.log(`[PolicyShield] Health check: http://localhost:${PORT}/health`);
 
-  // Run Startup Recovery
-  console.log(`[PolicyShield] Running startup recovery...`);
-  try {
-    const { resolveUnknownExecution } = await import('./gateway/orchestrator');
-    const unknownActions = await db.prepare(`SELECT intent_id FROM actions WHERE state = 'EXECUTION_UNKNOWN'`).all() as { intent_id: string }[];
-    
-    if (unknownActions.length > 0) {
-      console.log(`[PolicyShield] Found ${unknownActions.length} actions in EXECUTION_UNKNOWN state. Attempting recovery...`);
-      for (const action of unknownActions) {
-        await resolveUnknownExecution(action.intent_id);
+    // Run Startup Recovery
+    console.log(`[PolicyShield] Running startup recovery...`);
+    try {
+      const { resolveUnknownExecution } = await import('./gateway/orchestrator');
+      const unknownActions = await db.prepare(`SELECT intent_id FROM actions WHERE state = 'EXECUTION_UNKNOWN'`).all() as { intent_id: string }[];
+      
+      if (unknownActions.length > 0) {
+        console.log(`[PolicyShield] Found ${unknownActions.length} actions in EXECUTION_UNKNOWN state. Attempting recovery...`);
+        for (const action of unknownActions) {
+          await resolveUnknownExecution(action.intent_id);
+        }
+        console.log(`[PolicyShield] Recovery complete.`);
+      } else {
+        console.log(`[PolicyShield] No stuck executions found.`);
       }
-      console.log(`[PolicyShield] Startup recovery complete.`);
-    } else {
-      console.log(`[PolicyShield] No pending recoveries found.`);
+    } catch (e) {
+      console.error(`[PolicyShield] Startup recovery failed:`, e);
     }
-  } catch (e: any) {
-    console.error(`[PolicyShield] Startup recovery failed:`, e.message);
-  }
-});
+  });
+}
 
 // Graceful shutdown
 process.on('SIGINT', () => {
   console.log('\n[PolicyShield] Shutting down...');
   closeDb();
-  server.close();
+  if (server) {
+    server.close();
+  }
   process.exit(0);
 });
 

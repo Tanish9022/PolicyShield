@@ -15,16 +15,23 @@ export class TelemetryTracer {
     this.traceStartTime = performance.now();
 
     const db = getDb();
-    db.prepare(`
-      INSERT INTO traces (trace_id, request_id, intent_id, status)
-      VALUES ($1, $2, $3, 'STARTED')
-    `).run(this.traceId, this.requestId, this.intentId).catch(console.error);
+    try {
+      const res = db.prepare(`
+        INSERT INTO traces (trace_id, request_id, intent_id, status)
+        VALUES (?, ?, ?, 'STARTED')
+      `).run(this.traceId, this.requestId, this.intentId);
+      if (res && typeof res.catch === 'function') {
+        res.catch(console.error);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   public async setActionId(actionId: string) {
     this.actionId = actionId;
     const db = getDb();
-    await db.prepare(`UPDATE traces SET action_id = $1 WHERE trace_id = $2`).run(this.actionId, this.traceId);
+    await db.prepare(`UPDATE traces SET action_id = ? WHERE trace_id = ?`).run(this.actionId, this.traceId);
   }
 
   public async recordStage(stage: string, startTime: number, result: string, decision?: string, errorType?: string, model?: string, metadata?: any) {
@@ -37,7 +44,7 @@ export class TelemetryTracer {
         event_id, trace_id, request_id, intent_id, action_id, 
         stage, start_time, end_time, duration_ms, 
         result, decision, error_type, model, metadata
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       uuidv4(), this.traceId, this.requestId, this.intentId, this.actionId,
       stage, Math.round(startTime), Math.round(endTime), Math.round(durationMs),
@@ -50,8 +57,8 @@ export class TelemetryTracer {
     const db = getDb();
     await db.prepare(`
       UPDATE traces 
-      SET total_duration_ms = $1, status = $2, error_type = $3
-      WHERE trace_id = $4
+      SET total_duration_ms = ?, status = ?, error_type = ?
+      WHERE trace_id = ?
     `).run(Math.round(totalDuration), status, errorType || null, this.traceId);
   }
 

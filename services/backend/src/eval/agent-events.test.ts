@@ -80,7 +80,7 @@ describe('Agent Events Trace (Event-Driven Architecture)', () => {
     await checkoutAction(intentId);
 
     // 3. Verify event stream
-    const events = getAgentEvents(runId, 0);
+    const events = await getAgentEvents(runId, 0);
     
     expect(events.length).toBeGreaterThan(0);
     

@@ -3,7 +3,7 @@ import { getDb } from '../db/client';
 import { v4 as uuidv4 } from 'uuid';
 
 describe('Metrics Integrity Tests', () => {
-  it('Calculates unsafe autonomous actions dynamically from telemetry', () => {
+  it('Calculates unsafe autonomous actions dynamically from telemetry', async () => {
     const db = getDb();
     
     // Simulate an AI trace

@@ -7,8 +7,8 @@ beforeAll(() => {
   setupTestDatabase();
 });
 
-beforeEach(() => {
-  resetTestDatabase();
+beforeEach(async () => {
+  await resetTestDatabase();
 });
 
 afterAll(() => {
