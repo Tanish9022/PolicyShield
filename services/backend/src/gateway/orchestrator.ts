@@ -252,7 +252,7 @@ export async function processIntent(intent: IntentRequest, agentRunId: string = 
 export async function checkoutAction(intentId: string): Promise<any> {
   const db = getDb();
   
-  const action = await db.prepare('SELECT * FROM actions WHERE intent_id = ? AND state = \'VALIDATED\'').get(intentId) as any;
+  const action = await db.prepare('SELECT * FROM actions WHERE intent_id = ? AND state IN (\'VALIDATED\', \'READY_FOR_CHECKOUT\')').get(intentId) as any;
   if (!action) throw new Error('No valid approved action found for checkout');
   
   const intentRow = await db.prepare('SELECT * FROM intents WHERE intent_id = ?').get(intentId) as any;
