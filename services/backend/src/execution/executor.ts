@@ -24,7 +24,7 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
   const action = await db.prepare('SELECT * FROM actions WHERE action_id = ?').get(actionId) as any;
   if (!action) throw new Error('Action not found');
   if (action.decision !== 'APPROVE') throw new Error('Action was not approved by policy gate');
-  if (action.state !== 'VALIDATED' && action.state !== 'RETRY_ELIGIBLE') {
+  if (action.state !== 'VALIDATED' && action.state !== 'RETRY_ELIGIBLE' && action.state !== 'READY_FOR_CHECKOUT') {
     throw new Error(`Cannot execute from state ${action.state}`);
   }
 
@@ -80,7 +80,7 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
 
   // 2. Transition to EXECUTING atomically to prevent concurrent executions
   const updateResult = await db.prepare(
-    "UPDATE actions SET state = 'EXECUTING', updated_at = ? WHERE action_id = ? AND state IN ('VALIDATED', 'RETRY_ELIGIBLE')"
+    "UPDATE actions SET state = 'EXECUTING', updated_at = ? WHERE action_id = ? AND state IN ('VALIDATED', 'RETRY_ELIGIBLE', 'READY_FOR_CHECKOUT')"
   ).run(new Date().toISOString(), actionId);
   
   const changes = (updateResult as any).rowCount ?? (updateResult as any).changes;
