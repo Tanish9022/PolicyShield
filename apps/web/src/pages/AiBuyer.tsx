@@ -421,7 +421,7 @@ export default function AiBuyer() {
                 <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-indigo-500/8 border border-indigo-500/15 flex items-center gap-2">
                   <Spinner />
                   <span className="text-base text-white/40">
-                    {runState ? runState.current_step.replace(/_/g, ' ').toLowerCase() : 'processing...'}
+                    {runState ? (runState.current_step ?? 'processing').replace(/_/g, ' ').toLowerCase() : 'processing...'}
                   </span>
                 </div>
               </div>

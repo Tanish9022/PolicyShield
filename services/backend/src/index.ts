@@ -18,7 +18,8 @@ import streamRoutes from './routes/stream.routes';
 
 import path from 'path';
 
-// Load environment variables from the project root
+// Load environment variables — try backend-local first, then project root
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const app = express();

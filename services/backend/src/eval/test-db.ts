@@ -8,7 +8,7 @@ import path from 'path';
 
 let testDbPath: string | null = null;
 
-export function setupTestDatabase(): Database.Database {
+export function setupTestDatabase(): any {
   process.env.RAZORPAY_WEBHOOK_SECRET = 'test-only-secret';
   testDbPath = `./tmp-test-${uuidv4()}.db`;
   process.env.DB_PATH = testDbPath;

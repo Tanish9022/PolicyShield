@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Save, RefreshCw, Archive, CheckCircle2, AlertCircle } from 'lucide-react';
+import { API_BASE } from '../lib/api';
 
 export default function MerchantPolicies() {
   const [policyText, setPolicyText] = useState("Premium laptops can have at most 5% discount.\nKeep 3 units in reserve.\nOrders above ₹50,000 require approval.");
@@ -9,7 +10,7 @@ export default function MerchantPolicies() {
 
   const fetchActivePolicy = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/policies/MERCH_1`);
+      const res = await fetch(`${API_BASE}/api/policies/MERCH_1`);
       if (res.ok) {
         const data = await res.json();
         setActiveVersion(data);
@@ -28,7 +29,7 @@ export default function MerchantPolicies() {
     setIsCompiling(true);
     setCompileStatus('COMPILING');
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/policies/compile`, {
+      const res = await fetch(`${API_BASE}/api/policies/compile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ merchant_id: 'MERCH_1', policy_text: policyText })
@@ -99,7 +100,7 @@ export default function MerchantPolicies() {
                 <p>No active policy compiled.</p>
               </div>
             ) : (
-              activeVersion.rules.map((rule: any, idx: number) => (
+              (activeVersion.rules ?? []).map((rule: any, idx: number) => (
                 <div key={idx} className="border border-border rounded-md p-4 bg-background">
                   <div className="flex justify-between items-start mb-2">
                     <span className="font-mono text-primary font-bold">{rule.type}</span>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, ShieldCheck, ShieldAlert, Database } from 'lucide-react';
 import { StatusBadge } from '../components/StatusBadge';
+import { API_BASE } from '../lib/api';
 
 export default function DecisionDetail() {
   const { id } = useParams();
@@ -10,7 +11,7 @@ export default function DecisionDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/decisions/${id}`)
+    fetch(`${API_BASE}/api/decisions/${id}`)
       .then(res => res.json())
       .then(resData => {
         if (!resData.error) setData(resData);
@@ -138,7 +139,7 @@ export default function DecisionDetail() {
           <div className="bg-surface/30 border border-border rounded-lg p-5">
              <h3 className="font-medium mb-4 text-sm">AI Recommendation</h3>
              <pre className="text-[10px] font-mono text-text-main bg-background border border-border p-3 rounded overflow-x-auto">
-               {JSON.stringify(JSON.parse(action.parameters_json), null, 2)}
+               {(() => { try { return JSON.stringify(JSON.parse(action.parameters_json), null, 2); } catch { return action.parameters_json || '{}'; } })()}
              </pre>
           </div>
           

@@ -35,6 +35,8 @@ PolicyShield makes that impossible.
 
 ## Architecture
 
+> See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full architecture document, deployment topology, and webhook state machine.
+
 <details open>
 <summary><b>Click to Expand Agent Architecture</b></summary>
 

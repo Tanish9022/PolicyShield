@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MetricCard } from '../components/MetricCard';
 import { StatusBadge } from '../components/StatusBadge';
 import { Activity, ShieldCheck, AlertTriangle, XCircle, CheckCircle, HelpCircle } from 'lucide-react';
+import { API_BASE, fetchArray } from '../lib/api';
 
 interface SystemStatus {
   policies: number;
@@ -20,15 +21,13 @@ export default function Overview() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/status`)
+    fetch(`${API_BASE}/api/status`)
       .then(res => res.json())
       .then(data => setStatus(data))
       .catch(console.error);
 
-    fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/decisions`)
-      .then(res => res.json())
-      .then(data => setRecentDecisions(data.slice(0, 10)))
-      .catch(console.error);
+    fetchArray('/api/decisions')
+      .then(data => setRecentDecisions(data.slice(0, 10)));
   }, []);
 
   return (

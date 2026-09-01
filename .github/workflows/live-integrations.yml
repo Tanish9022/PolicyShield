@@ -6,6 +6,8 @@ on:
 jobs:
   gemini-eval:
     runs-on: ubuntu-latest
+    env:
+      DB_PATH: ":memory:"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,3 +31,34 @@ jobs:
         with:
           name: gemini-report
           path: gemini-report.txt
+
+  razorpay-live:
+    runs-on: ubuntu-latest
+    env:
+      DB_PATH: ":memory:"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Razorpay Live Smoke Test
+        env:
+          RAZORPAY_KEY_ID: ${{ secrets.RAZORPAY_KEY_ID }}
+          RAZORPAY_KEY_SECRET: ${{ secrets.RAZORPAY_KEY_SECRET }}
+          RAZORPAY_WEBHOOK_SECRET: ${{ secrets.RAZORPAY_WEBHOOK_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: npx tsx services/backend/src/eval/live-smoke-test.ts > razorpay-report.txt
+
+      - name: Upload Razorpay Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: razorpay-report
+          path: razorpay-report.txt

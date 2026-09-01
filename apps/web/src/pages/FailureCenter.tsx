@@ -1,24 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from '../components/StatusBadge';
-import { AlertOctagon, HelpCircle, ServerCrash } from 'lucide-react';
+import { AlertOctagon, HelpCircle, ServerCrash, CheckCircle2 } from 'lucide-react';
 import { MetricCard } from '../components/MetricCard';
+import { fetchArray } from '../lib/api';
 
 export default function FailureCenter() {
   const [failures, setFailures] = useState<any[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/decisions`)
-      .then(res => res.json())
-      .then(data => {
-        // Filter for failures or unknown states
-        const failed = data.filter((d: any) => 
-          ['EXECUTION_UNKNOWN', 'ESCALATED', 'VERIFIED_FAILURE'].includes(d.state)
-        );
-        setFailures(failed);
-      })
-      .catch(console.error);
+    fetchArray('/api/decisions').then(data => {
+      const failed = data.filter((d: any) => 
+        ['EXECUTION_UNKNOWN', 'ESCALATED', 'VERIFIED_FAILURE'].includes(d.state)
+      );
+      setFailures(failed);
+    });
   }, []);
 
   return (
@@ -118,5 +115,3 @@ export default function FailureCenter() {
   );
 }
 
-// Missing icon import
-import { CheckCircle2 } from 'lucide-react';

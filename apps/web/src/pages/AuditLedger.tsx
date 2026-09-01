@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
+import { fetchArray } from '../lib/api';
 
 export default function AuditLedger() {
   const [events, setEvents] = useState<any[]>([]);
@@ -7,10 +8,7 @@ export default function AuditLedger() {
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/audit`)
-      .then(res => res.json())
-      .then(data => setEvents(data))
-      .catch(console.error);
+    fetchArray('/api/audit').then(setEvents);
   }, []);
 
   const filteredEvents = events.filter(e => 

@@ -9,6 +9,11 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      STUB_AI: "true"
+      STUB_RAZORPAY: "true"
+      DB_PATH: ":memory:"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,4 +38,3 @@ jobs:
 
       - name: CI Safety Invariants
         run: npm run eval:ci --workspace=services/backend
-

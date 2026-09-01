@@ -18,6 +18,7 @@ dist/
 *.sqlite3
 *.db-shm
 *.db-wal
+tmp-test-*.db
 
 # IDE
 .vscode/

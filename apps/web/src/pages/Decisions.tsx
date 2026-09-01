@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from '../components/StatusBadge';
+import { fetchArray } from '../lib/api';
 
 export default function Decisions() {
   const [decisions, setDecisions] = useState<any[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || "http://localhost:3001"}`}/api/decisions`)
-      .then(res => res.json())
-      .then(data => setDecisions(data))
-      .catch(console.error);
+    fetchArray('/api/decisions').then(setDecisions);
   }, []);
 
   return (
