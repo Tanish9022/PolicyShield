@@ -39,11 +39,12 @@ The buyer wants: "${intent.buyer_input}"
 Here are the authoritative candidates available:
 ${JSON.stringify(candidates, null, 2)}
 
-Your task: Compare these candidates based on price, available discount, inventory, and delivery options, and select the BEST one for the buyer.
+Your task: Compare these candidates based on specifications, price, inventory, and delivery options, and select the BEST base product for the buyer.
 Return a structured decision.
 
 Constraints:
 - You must select exactly ONE product_id from the candidates.
+- If the buyer is requesting a discount, price-match, or negotiation, DO NOT escalate. Simply select the best matching base product. The discount negotiation will be handled in the next step of the pipeline.
 - Base your reasoning strictly on the provided candidates data. Do not invent any values.
 `;
 
