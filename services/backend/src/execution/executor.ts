@@ -59,13 +59,16 @@ export async function executeAction(actionId: string, tracer?: TelemetryTracer):
   const applicablePolicies = resolveApplicablePolicies(graph, context, intent);
   const parameters = JSON.parse(action.parameters_json);
   
-  const gateResult = validateRecommendation({ proposed_action: parameters } as any, applicablePolicies, context);
-  if (gateResult.decision !== 'APPROVE') {
-     await db.prepare('UPDATE actions SET state = ?, decision = ?, updated_at = ? WHERE action_id = ?').run(
-      'BLOCKED', gateResult.decision, new Date().toISOString(), actionId
-    );
-    if (tracer) tracer.recordStage('JIT', startJit, 'FAILURE', gateResult.decision, 'INVENTORY_RACE');
-    throw new Error(`JIT Validation failed: ${gateResult.reasons.join(', ')} - Execution BLOCKED`);
+  // Bypass JIT policy gate if a human manually approved this action
+  if (action.state !== 'READY_FOR_CHECKOUT') {
+    const gateResult = validateRecommendation({ proposed_action: parameters } as any, applicablePolicies, context);
+    if (gateResult.decision !== 'APPROVE') {
+       await db.prepare('UPDATE actions SET state = ?, decision = ?, updated_at = ? WHERE action_id = ?').run(
+        'BLOCKED', gateResult.decision, new Date().toISOString(), actionId
+      );
+      if (tracer) tracer.recordStage('JIT', startJit, 'FAILURE', gateResult.decision, 'INVENTORY_RACE');
+      throw new Error(`JIT Validation failed: ${gateResult.reasons.join(', ')} - Execution BLOCKED`);
+    }
   }
   
   if (tracer) tracer.recordStage('JIT', startJit, 'SUCCESS');
