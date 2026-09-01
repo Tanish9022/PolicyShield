@@ -17,14 +17,14 @@ export class TelemetryTracer {
     const db = getDb();
     db.prepare(`
       INSERT INTO traces (trace_id, request_id, intent_id, status)
-      VALUES (?, ?, ?, 'STARTED')
-    `).run(this.traceId, this.requestId, this.intentId);
+      VALUES ($1, $2, $3, 'STARTED')
+    `).run(this.traceId, this.requestId, this.intentId).catch(console.error);
   }
 
   public async setActionId(actionId: string) {
     this.actionId = actionId;
     const db = getDb();
-    await db.prepare(`UPDATE traces SET action_id = ? WHERE trace_id = ?`).run(this.actionId, this.traceId);
+    await db.prepare(`UPDATE traces SET action_id = $1 WHERE trace_id = $2`).run(this.actionId, this.traceId);
   }
 
   public async recordStage(stage: string, startTime: number, result: string, decision?: string, errorType?: string, model?: string, metadata?: any) {
@@ -32,15 +32,15 @@ export class TelemetryTracer {
     const durationMs = endTime - startTime;
     const db = getDb();
     
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO metric_events (
         event_id, trace_id, request_id, intent_id, action_id, 
         stage, start_time, end_time, duration_ms, 
         result, decision, error_type, model, metadata
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
     `).run(
       uuidv4(), this.traceId, this.requestId, this.intentId, this.actionId,
-      stage, startTime, endTime, durationMs,
+      stage, Math.round(startTime), Math.round(endTime), Math.round(durationMs),
       result, decision || null, errorType || null, model || null, metadata ? JSON.stringify(metadata) : '{}'
     );
   }
@@ -50,9 +50,9 @@ export class TelemetryTracer {
     const db = getDb();
     await db.prepare(`
       UPDATE traces 
-      SET total_duration_ms = ?, status = ?, error_type = ?
-      WHERE trace_id = ?
-    `).run(totalDuration, status, errorType || null, this.traceId);
+      SET total_duration_ms = $1, status = $2, error_type = $3
+      WHERE trace_id = $4
+    `).run(Math.round(totalDuration), status, errorType || null, this.traceId);
   }
 
   public get traceIdVal() { return this.traceId; }
