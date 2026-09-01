@@ -10,9 +10,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { TelemetryTracer } from './telemetry';
 import { appendAgentEvent } from '../agent/events';
 
-function logAudit(event: any) {
+async function logAudit(event: any) {
   const db = getDb();
-  db.prepare(`
+  await db.prepare(`
     INSERT INTO audit_events 
     (event_id, event_type, intent_id, action_id, policy_version, model_version, decision, timestamp)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -38,7 +38,7 @@ export async function processIntent(intent: IntentRequest, agentRunId: string = 
   // Extract and persist any explicit memory from the user intent
   extractAndPersistExplicitPreferences(db, intent);
   
-  db.prepare(`
+  await db.prepare(`
     INSERT INTO intents (intent_id, request_id, merchant_id, buyer_input, customer_id, received_at)
     VALUES (?, ?, ?, ?, ?, ?)
     ON CONFLICT DO NOTHING
@@ -50,15 +50,15 @@ export async function processIntent(intent: IntentRequest, agentRunId: string = 
     intent.customer_id || null,
     intent.received_at || new Date().toISOString()
   );
-  logAudit({ event_type: AuditEventType.INTENT_RECEIVED, intent_id: intent.intent_id });
+  await logAudit({ event_type: AuditEventType.INTENT_RECEIVED, intent_id: intent.intent_id });
   tracer.recordStage('REQUEST', startAuditIntent, 'SUCCESS');
 
-  db.prepare(`
+  await db.prepare(`
     INSERT INTO agent_runs (agent_run_id, intent_id, merchant_id, state, current_step, trace_id)
     VALUES (?, ?, ?, 'NEW', 'DISCOVERY', ?)
   `).run(agentRunId, intent.intent_id, intent.merchant_id, tracer.traceIdVal);
 
-  appendAgentEvent(agentRunId, 'INTENT_RECEIVED', { intent });
+  await appendAgentEvent(agentRunId, 'INTENT_RECEIVED', { intent });
 
   // 1. Fetch Context
   const startContext = performance.now();
@@ -78,7 +78,7 @@ export async function processIntent(intent: IntentRequest, agentRunId: string = 
   const { discoverCandidates } = await import('../agent/discovery');
   const candidates = await discoverCandidates(intent, context, tracer);
   
-  appendAgentEvent(agentRunId, 'DISCOVER', { candidates_count: candidates.length });
+  await appendAgentEvent(agentRunId, 'DISCOVER', { candidates_count: candidates.length });
 
   if (candidates.length === 0) {
     await db.prepare(`UPDATE agent_runs SET state = 'ESCALATED', current_step = 'FAILED_DISCOVERY', completed_at = ? WHERE agent_run_id = ?`).run(new Date().toISOString(), agentRunId);
@@ -92,7 +92,7 @@ export async function processIntent(intent: IntentRequest, agentRunId: string = 
   const { compareCandidates } = await import('../agent/comparison');
   const decision = await compareCandidates(intent, candidates, tracer);
   
-  appendAgentEvent(agentRunId, 'COMPARE', { decision });
+  await appendAgentEvent(agentRunId, 'COMPARE', { decision });
 
   if (decision.decision !== 'SELECT' || !decision.selected_product_id) {
     await db.prepare(`UPDATE agent_runs SET state = 'ESCALATED', current_step = 'FAILED_COMPARISON', completed_at = ? WHERE agent_run_id = ?`).run(new Date().toISOString(), agentRunId);
@@ -107,7 +107,7 @@ export async function processIntent(intent: IntentRequest, agentRunId: string = 
   const { proposeAction } = await import('../agent/negotiation');
   let negotiation = await proposeAction(intent, selectedCandidate!, undefined, tracer);
   
-  appendAgentEvent(agentRunId, 'PROPOSE', { proposal: negotiation.proposed_action, reasoning: negotiation.reasoning });
+  await appendAgentEvent(agentRunId, 'PROPOSE', { proposal: negotiation.proposed_action, reasoning: negotiation.reasoning });
 
   // 6. Policy Gate
   await db.prepare(`UPDATE agent_runs SET state = 'WAITING_POLICY', current_step = 'POLICY_CHECK' WHERE agent_run_id = ?`).run(agentRunId);
@@ -125,7 +125,7 @@ export async function processIntent(intent: IntentRequest, agentRunId: string = 
     modelErrorContained = true;
     adaptationCount++;
     
-    appendAgentEvent(agentRunId, 'POLICY_REJECT', { 
+    await appendAgentEvent(agentRunId, 'POLICY_REJECT', { 
       proposal: negotiation.proposed_action,
       reasons: gateResult.reasons,
       metadata: gateResult.metadata
@@ -139,9 +139,9 @@ export async function processIntent(intent: IntentRequest, agentRunId: string = 
       metadata: gateResult.metadata
     };
     
-    appendAgentEvent(agentRunId, 'ADAPT', { attempt: adaptationCount, feedback });
+    await appendAgentEvent(agentRunId, 'ADAPT', { attempt: adaptationCount, feedback });
     negotiation = await proposeAction(intent, selectedCandidate!, feedback, tracer);
-    appendAgentEvent(agentRunId, 'PROPOSE', { proposal: negotiation.proposed_action, reasoning: negotiation.reasoning });
+    await appendAgentEvent(agentRunId, 'PROPOSE', { proposal: negotiation.proposed_action, reasoning: negotiation.reasoning });
     
     await db.prepare(`UPDATE agent_runs SET state = 'WAITING_POLICY', current_step = 'POLICY_CHECK' WHERE agent_run_id = ?`).run(agentRunId);
     agentOutputMock = { proposed_action: negotiation.proposed_action } as any;
@@ -160,7 +160,7 @@ export async function processIntent(intent: IntentRequest, agentRunId: string = 
   const externalReceipt = `ps_${crypto.createHash('sha256').update(idempKey).digest('hex').substring(0, 36)}`;
 
   try {
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO actions (action_id, intent_id, merchant_id, idempotency_key, external_receipt, action_type, state, decision, policy_version, parameters_json)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
@@ -200,7 +200,7 @@ export async function processIntent(intent: IntentRequest, agentRunId: string = 
     throw err;
   }
 
-  logAudit({ 
+  await logAudit({ 
     event_type: AuditEventType.GATE_DECISION, 
     intent_id: intent.intent_id,
     action_id: actionId,
@@ -226,10 +226,10 @@ export async function processIntent(intent: IntentRequest, agentRunId: string = 
   );
 
   if (gateResult.decision === 'APPROVE') {
-    appendAgentEvent(agentRunId, 'POLICY_APPROVE', { proposal: negotiation.proposed_action });
+    await appendAgentEvent(agentRunId, 'POLICY_APPROVE', { proposal: negotiation.proposed_action });
     await db.prepare(`UPDATE agent_runs SET selected_action_id = ?, state = 'READY_FOR_CHECKOUT', current_step = 'CHECKOUT_PENDING' WHERE agent_run_id = ?`).run(actionId, agentRunId);
   } else {
-    appendAgentEvent(agentRunId, 'POLICY_REJECT', { proposal: negotiation.proposed_action, reasons: gateResult.reasons });
+    await appendAgentEvent(agentRunId, 'POLICY_REJECT', { proposal: negotiation.proposed_action, reasons: gateResult.reasons });
     await db.prepare(`UPDATE agent_runs SET selected_action_id = ?, state = 'FAILED', current_step = 'FAILED_POLICY', completed_at = ? WHERE agent_run_id = ?`).run(actionId, new Date().toISOString(), agentRunId);
   }
 
@@ -280,7 +280,7 @@ export async function checkoutAction(intentId: string): Promise<any> {
   if (graph.version !== action.policy_version) {
     await db.prepare(`UPDATE actions SET state = 'BLOCKED', reason_codes_json = ? WHERE action_id = ?`).run(JSON.stringify(['POLICY_VERSION_CHANGED']), action.action_id);
     await db.prepare(`UPDATE agent_runs SET state = 'FAILED', current_step = 'JIT_FAILED' WHERE intent_id = ?`).run(intentId);
-    if (agentRunId) appendAgentEvent(agentRunId, 'JIT_FAILED', { reason: 'POLICY_VERSION_CHANGED' });
+    if (agentRunId) await appendAgentEvent(agentRunId, 'JIT_FAILED', { reason: 'POLICY_VERSION_CHANGED' });
     tracer.recordStage('JIT_VALIDATION', startJit, 'FAILURE', undefined, 'POLICY_VERSION_CHANGED');
     tracer.completeTrace('BLOCKED');
     throw new Error('Policy version changed. Checkout blocked.');
@@ -292,17 +292,17 @@ export async function checkoutAction(intentId: string): Promise<any> {
   if (gateResult.decision !== 'APPROVE') {
     await db.prepare(`UPDATE actions SET state = 'BLOCKED', reason_codes_json = ? WHERE action_id = ?`).run(JSON.stringify(gateResult.reasons), action.action_id);
     await db.prepare(`UPDATE agent_runs SET state = 'FAILED', current_step = 'JIT_FAILED' WHERE intent_id = ?`).run(intentId);
-    if (agentRunId) appendAgentEvent(agentRunId, 'JIT_FAILED', { reasons: gateResult.reasons });
+    if (agentRunId) await appendAgentEvent(agentRunId, 'JIT_FAILED', { reasons: gateResult.reasons });
     tracer.recordStage('JIT_VALIDATION', startJit, 'FAILURE', undefined, 'JIT_REJECTED');
     tracer.completeTrace('BLOCKED');
     throw new Error('JIT Validation failed: ' + gateResult.reasons.join(', '));
   }
 
   tracer.recordStage('JIT_VALIDATION', startJit, 'SUCCESS');
-  if (agentRunId) appendAgentEvent(agentRunId, 'JIT_VALIDATE', { status: 'SUCCESS' });
+  if (agentRunId) await appendAgentEvent(agentRunId, 'JIT_VALIDATE', { status: 'SUCCESS' });
 
   await db.prepare(`UPDATE agent_runs SET state = 'EXECUTING', current_step = 'RAZORPAY' WHERE intent_id = ?`).run(intentId);
-  if (agentRunId) appendAgentEvent(agentRunId, 'PAYMENT_CREATE', { action_id: action.action_id });
+  if (agentRunId) await appendAgentEvent(agentRunId, 'PAYMENT_CREATE', { action_id: action.action_id });
 
   // EXECUTION
   const { executeAction } = await import('../execution/executor');
@@ -312,10 +312,10 @@ export async function checkoutAction(intentId: string): Promise<any> {
   
   if (finalAction.state === 'VERIFIED_SUCCESS') {
     await db.prepare(`UPDATE agent_runs SET state = 'COMPLETED', current_step = 'VERIFIED', completed_at = ? WHERE intent_id = ?`).run(new Date().toISOString(), intentId);
-    if (agentRunId) appendAgentEvent(agentRunId, 'VERIFIED_SUCCESS', { order_id: finalAction.razorpay_order_id });
+    if (agentRunId) await appendAgentEvent(agentRunId, 'VERIFIED_SUCCESS', { order_id: finalAction.razorpay_order_id });
   } else if (finalAction.state === 'EXECUTION_UNKNOWN') {
     await db.prepare(`UPDATE agent_runs SET state = 'EXECUTION_UNKNOWN', current_step = 'VERIFYING' WHERE intent_id = ?`).run(intentId);
-    if (agentRunId) appendAgentEvent(agentRunId, 'EXECUTION_UNKNOWN', { status: 'AWAITING_VERIFICATION' });
+    if (agentRunId) await appendAgentEvent(agentRunId, 'EXECUTION_UNKNOWN', { status: 'AWAITING_VERIFICATION' });
   }
   
   tracer.completeTrace(finalAction.state);
@@ -332,9 +332,9 @@ export async function resolveUnknownExecution(intentId: string, tracer?: Telemet
   const agentRun = await db.prepare('SELECT agent_run_id FROM agent_runs WHERE intent_id = ?').get(intentId) as any;
   const agentRunId = agentRun?.agent_run_id;
   
-  if (agentRunId) appendAgentEvent(agentRunId, 'PAYMENT_VERIFY', { action_id: action.action_id });
+  if (agentRunId) await appendAgentEvent(agentRunId, 'PAYMENT_VERIFY', { action_id: action.action_id });
   
-  logAudit({ event_type: AuditEventType.EXECUTION_RECOVERY, intent_id: intentId, action_id: action.action_id });
+  await logAudit({ event_type: AuditEventType.EXECUTION_RECOVERY, intent_id: intentId, action_id: action.action_id });
   const { RazorpayAdapter } = await import('../execution/razorpay');
   
   let existingOrder = null;
@@ -368,9 +368,9 @@ export async function resolveUnknownExecution(intentId: string, tracer?: Telemet
   if (existingOrder) {
     await db.prepare(`UPDATE actions SET state = 'VERIFIED_SUCCESS', razorpay_order_id = ? WHERE action_id = ?`).run(existingOrder.id, action.action_id);
     await db.prepare(`UPDATE agent_runs SET state = 'COMPLETED', current_step = 'VERIFIED' WHERE intent_id = ?`).run(intentId);
-    if (agentRunId) appendAgentEvent(agentRunId, 'VERIFIED_SUCCESS', { order_id: existingOrder.id });
+    if (agentRunId) await appendAgentEvent(agentRunId, 'VERIFIED_SUCCESS', { order_id: existingOrder.id });
     
-    logAudit({ event_type: AuditEventType.EXECUTION_RECOVERY, intent_id: intentId, action_id: action.action_id, decision: 'VERIFIED_SUCCESS' });
+    await logAudit({ event_type: AuditEventType.EXECUTION_RECOVERY, intent_id: intentId, action_id: action.action_id, decision: 'VERIFIED_SUCCESS' });
     if (tracer) {
        tracer.recordStage('RECOVERY', startTotal, 'SUCCESS', 'VERIFIED_SUCCESS');
        tracer.completeTrace('VERIFIED_SUCCESS');
@@ -379,9 +379,9 @@ export async function resolveUnknownExecution(intentId: string, tracer?: Telemet
   } else {
     await db.prepare(`UPDATE actions SET state = 'VERIFIED_FAILURE' WHERE action_id = ?`).run(action.action_id);
     await db.prepare(`UPDATE agent_runs SET state = 'FAILED', current_step = 'VERIFIED' WHERE intent_id = ?`).run(intentId);
-    if (agentRunId) appendAgentEvent(agentRunId, 'VERIFIED_FAILURE', { reason: 'ORDER_NOT_FOUND' });
+    if (agentRunId) await appendAgentEvent(agentRunId, 'VERIFIED_FAILURE', { reason: 'ORDER_NOT_FOUND' });
     
-    logAudit({ event_type: AuditEventType.EXECUTION_RECOVERY, intent_id: intentId, action_id: action.action_id, decision: 'VERIFIED_FAILURE' });
+    await logAudit({ event_type: AuditEventType.EXECUTION_RECOVERY, intent_id: intentId, action_id: action.action_id, decision: 'VERIFIED_FAILURE' });
     if (tracer) {
        tracer.recordStage('RECOVERY', startTotal, 'SUCCESS', 'VERIFIED_FAILURE');
        tracer.completeTrace('VERIFIED_FAILURE');
