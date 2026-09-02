@@ -314,18 +314,18 @@ export default function AiBuyer() {
 
   // ─── Render ──────────────────────────────────────────────────────
   return (
-    <div className="h-full flex flex-col gap-4" style={{ maxHeight: 'calc(100vh - 8rem)' }}>
+    <div className="min-h-full lg:h-full flex flex-col gap-4 pb-6 lg:pb-0" style={{ minHeight: 'calc(100vh - 7rem)' }}>
 
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="shrink-0 flex items-start justify-between">
+      <div className="shrink-0 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-white tracking-tight">AI Buyer Console</h1>
-          <p className="text-sm text-white/30 mt-0.5">
+          <h1 className="text-xl sm:text-2xl font-semibold text-white tracking-tight">AI Buyer Console</h1>
+          <p className="text-xs sm:text-sm text-white/40 mt-0.5">
             Every state rendered from backend events — frontend never infers
           </p>
         </div>
         {runState && (
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-2 pt-1 self-start">
             <StateChip state={runState.state} />
             {runState.adaptation_count > 0 && (
               <span className="text-[11px] text-amber-400/70 font-code">
@@ -336,11 +336,11 @@ export default function AiBuyer() {
         )}
       </div>
 
-      {/* ── 3-Zone Grid ───────────────────────────────────────── */}
-      <div className="flex-1 grid grid-cols-[1fr_360px_280px] gap-4 min-h-0">
+      {/* ── 3-Zone Responsive Grid ─────────────────────────────── */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-0">
 
         {/* LEFT — Buyer Chat ─────────────────────────────────── */}
-        <div className="glass rounded-2xl flex flex-col overflow-hidden min-h-0">
+        <div className="lg:col-span-6 glass rounded-2xl flex flex-col overflow-hidden min-h-[480px] lg:min-h-0">
           <div className="shrink-0 flex items-center gap-2.5 px-5 py-3.5 border-b border-white/5">
             <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center">
               <User size={12} className="text-indigo-300" />
@@ -476,7 +476,7 @@ export default function AiBuyer() {
 
         {/* MIDDLE — Immutable Event Log ─────────────────────── */}
         <div
-          className="rounded-2xl flex flex-col overflow-hidden min-h-0"
+          className="lg:col-span-3 rounded-2xl flex flex-col overflow-hidden min-h-[360px] lg:min-h-0"
           style={{ background: 'rgba(9,9,13,0.95)', border: '1px solid rgba(255,255,255,0.04)' }}
         >
           <div className="shrink-0 flex items-center justify-between px-4 py-3.5 border-b border-white/5">
@@ -513,7 +513,7 @@ export default function AiBuyer() {
         </div>
 
         {/* RIGHT — Agent State ───────────────────────────────── */}
-        <div className="glass rounded-2xl flex flex-col overflow-hidden min-h-0">
+        <div className="lg:col-span-3 glass rounded-2xl flex flex-col overflow-hidden min-h-[360px] lg:min-h-0">
           <div className="shrink-0 flex items-center gap-2.5 px-4 py-3.5 border-b border-white/5">
             <div className="w-6 h-6 rounded-lg bg-blue-500/15 flex items-center justify-center">
               <Shield size={12} className="text-blue-400" />

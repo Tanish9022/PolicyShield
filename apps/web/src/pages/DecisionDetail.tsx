@@ -42,7 +42,12 @@ export default function DecisionDetail() {
       if (res.ok) {
         setData(prev => prev ? {
           ...prev,
-          action: { ...prev.action, decision: result.decision, state: result.state }
+          action: { 
+            ...prev.action, 
+            decision: result.decision, 
+            state: result.state,
+            razorpay_order_id: result.razorpay_order_id || prev.action.razorpay_order_id
+          }
         } : null);
       } else {
         alert('Failed to resolve: ' + result.error);

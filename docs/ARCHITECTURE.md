@@ -165,31 +165,27 @@ sequenceDiagram
     Gemini-->>Gateway: Selected Candidate (prod_macbook, ₹1,50,000)
     Gateway->>DB: Append Event (DISCOVER, COMPARE)
 
-    rect rgb(254, 242, 242)
-        Note over Gateway,Gate: Multi-Turn Adaptive Negotiation (Max 3 Attempts)
-        Gateway->>Gemini: Formulate Commercial Proposal
-        Gemini-->>Gateway: Proposal (discount: 50%, amount: ₹75,000)
-        Gateway->>Gate: Validate against Typed Rules
-        Gate-->>Gateway: POLICY_REJECT (Violation: max_discount=15%, allowed: 15%)
-        Gateway->>DB: Append Event (POLICY_REJECT, ADAPT)
-        Gateway->>Gemini: Feedback Policy Metadata (allowed_discount: 15%)
-        Gemini-->>Gateway: Adapted Proposal (discount: 15%, amount: ₹1,27,500)
-        Gateway->>Gate: Re-validate Adapted Proposal
-        Gate-->>Gateway: POLICY_APPROVE (State: VALIDATED)
-    end
+    Note over Gateway,Gate: Multi-Turn Adaptive Negotiation (Max 3 Attempts)
+    Gateway->>Gemini: Formulate Commercial Proposal
+    Gemini-->>Gateway: Proposal (discount: 50%, amount: ₹75,000)
+    Gateway->>Gate: Validate against Typed Rules
+    Gate-->>Gateway: POLICY_REJECT (Violation: max_discount=15%, allowed: 15%)
+    Gateway->>DB: Append Event (POLICY_REJECT, ADAPT)
+    Gateway->>Gemini: Feedback Policy Metadata (allowed_discount: 15%)
+    Gemini-->>Gateway: Adapted Proposal (discount: 15%, amount: ₹1,27,500)
+    Gateway->>Gate: Re-validate Adapted Proposal
+    Gate-->>Gateway: POLICY_APPROVE (State: VALIDATED)
 
     Gateway->>DB: State -> READY_FOR_CHECKOUT
     Buyer->>Gateway: POST /api/checkout (Confirm)
 
-    rect rgb(240, 253, 244)
-        Note over Gateway,Razorpay: JIT Verification & Financial Mutation
-        Gateway->>Gate: JIT Re-Validation (Live Price, Stock Reserve, Policy Version)
-        Gate-->>Gateway: JIT Verification Passed
-        Gateway->>Razorpay: Create Order (Idempotency Receipt: ps_sha256(intent_id))
-        Razorpay-->>Gateway: order_id (e.g. order_O123)
-        Razorpay-->>Gateway: Webhook: payment.captured (HMAC Verified)
-        Gateway->>DB: State -> VERIFIED_SUCCESS
-    end
+    Note over Gateway,Razorpay: JIT Verification & Financial Mutation
+    Gateway->>Gate: JIT Re-Validation (Live Price, Stock Reserve, Policy Version)
+    Gate-->>Gateway: JIT Verification Passed
+    Gateway->>Razorpay: Create Order (Idempotency Receipt: ps_sha256(intent_id))
+    Razorpay-->>Gateway: order_id (e.g. order_O123)
+    Razorpay-->>Gateway: Webhook: payment.captured (HMAC Verified)
+    Gateway->>DB: State -> VERIFIED_SUCCESS
 ```
 
 ---

@@ -87,7 +87,28 @@ router.post('/:id/resolve', async (req, res) => {
       `).run(require('uuid').v4(), action.intent_id, req.params.id, decision);
     }
 
-    res.json({ success: true, decision, state });
+    let finalState = state;
+    let razorpayOrderId = null;
+
+    // When approved by human, immediately execute checkout to generate live Razorpay order
+    if (decision === 'APPROVE' && action?.intent_id) {
+      try {
+        const { checkoutAction } = await import('../gateway/orchestrator');
+        const executionResult = await checkoutAction(action.intent_id);
+        finalState = executionResult.state || 'VERIFIED_SUCCESS';
+        razorpayOrderId = executionResult.razorpay_order_id || null;
+      } catch (checkoutErr: any) {
+        // Even if immediate checkout fails, state is already READY_FOR_CHECKOUT
+        console.warn(`[RESOLVE_CHECKOUT_DEFERRED] intent_id=${action.intent_id} error=${checkoutErr.message}`);
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      decision, 
+      state: finalState,
+      razorpay_order_id: razorpayOrderId
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message, request_id: req.headers['x-request-id'] });
   }

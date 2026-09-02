@@ -19,8 +19,8 @@ export default function Decisions() {
       </div>
 
       <div className="flex-1 border border-border rounded-lg overflow-hidden bg-surface/30 flex flex-col min-h-0">
-        <div className="overflow-y-auto flex-1">
-          <table className="w-full text-left text-sm relative">
+        <div className="overflow-y-auto overflow-x-auto flex-1">
+          <table className="w-full min-w-[700px] text-left text-sm relative">
             <thead className="bg-surface/50 border-b border-border text-text-muted sticky top-0 z-10 backdrop-blur-md">
               <tr>
                 <th className="px-6 py-3 font-medium">Time</th>
