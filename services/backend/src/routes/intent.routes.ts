@@ -4,6 +4,7 @@ import { BuyerIntentInputSchema, IntentRequest } from '@policyshield/shared';
 import { v4 as uuidv4 } from 'uuid';
 import { requireAuth, requireMerchantAccess } from '../middleware/auth';
 import { rateLimit } from '../middleware/rate-limit';
+import { getDb } from '../db/client';
 
 const router = Router();
 
@@ -34,7 +35,6 @@ router.post('/', async (req, res, next) => {
     // Process intent through the gateway in the background
     processIntent(intent, agentRunId).catch(err => {
       console.error(`[Background Orchestration Failed] for run ${agentRunId}:`, err);
-      const { getDb } = require('../db/client');
       try {
         getDb().prepare(`UPDATE agent_runs SET state = 'FAILED', current_step = 'ERROR', completed_at = ? WHERE agent_run_id = ?`)
           .run(new Date().toISOString(), agentRunId);

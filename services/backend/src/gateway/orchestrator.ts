@@ -355,7 +355,7 @@ export async function resolveUnknownExecution(intentId: string, tracer?: Telemet
   
   let existingOrder = null;
   let attempts = 3;
-  let backoffMs = 1000;
+  let backoffMs = process.env.NODE_ENV === 'test' ? 10 : 1000;
 
   for (let i = 0; i < attempts; i++) {
     if (action.razorpay_order_id) {

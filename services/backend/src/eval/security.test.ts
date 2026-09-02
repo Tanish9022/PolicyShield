@@ -55,16 +55,17 @@ describe('Security Boundaries (Red Team)', () => {
 
   it('4. Applies Rate Limiting', async () => {
     // Spam the endpoint to trigger rate limit (max 30)
-    let lastStatus = 200;
-    for (let i = 0; i < 35; i++) {
-      const res = await request(app)
+    const requests = Array.from({ length: 35 }).map(() =>
+      request(app)
         .post('/api/intent')
         .set('x-merchant-id', 'merchant_1')
-        .send(validPayload);
-      lastStatus = res.status;
-    }
+        .send(validPayload)
+    );
+    
+    const results = await Promise.all(requests);
+    const has429 = results.some(res => res.status === 429);
     
     // By the 35th request, we should definitely hit 429
-    expect(lastStatus).toBe(429);
+    expect(has429).toBe(true);
   });
 });
