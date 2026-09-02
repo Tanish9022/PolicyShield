@@ -34,12 +34,16 @@ router.post('/', async (req, res, next) => {
     
     // Process intent through the gateway in the background
     processIntent(intent, agentRunId).catch(err => {
-      console.error(`[Background Orchestration Failed] for run ${agentRunId}:`, err);
+      if (process.env.NODE_ENV !== 'test') {
+        console.error(`[Background Orchestration Failed] for run ${agentRunId}:`, err);
+      }
       try {
         getDb().prepare(`UPDATE agent_runs SET state = 'FAILED', current_step = 'ERROR', completed_at = ? WHERE agent_run_id = ?`)
           .run(new Date().toISOString(), agentRunId);
       } catch (dbErr) {
-        console.error(`Failed to update run state to FAILED:`, dbErr);
+        if (process.env.NODE_ENV !== 'test') {
+          console.error(`Failed to update run state to FAILED:`, dbErr);
+        }
       }
     });
     

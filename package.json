@@ -23,6 +23,6 @@
     "eval:report": "npm run eval:report --workspace=services/backend"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   }
 }
