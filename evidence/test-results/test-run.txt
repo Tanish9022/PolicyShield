@@ -16,17 +16,19 @@ Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.[39m
 
 [1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90mC:/PolicyShield/services/backend[39m
 
-[90mstdout[2m | src/eval/recovery.test.ts[2m > [22m[2mExecution Recovery Tests[2m > [22m[2mTest C: Order NOT created, timeout occurs -> Failed
+[90mstdout[2m | src/eval/recovery.test.ts[2m > [22m[2mExecution Recovery Tests[2m > [22m[2mTest C: Order NOT created, timeout occurs -> Expected Retry Triggered
 [22m[39mRecovery attempt 1 - Order not found. Retrying in 1000ms...
 
- [32mΓ£ô[39m src/eval/ai_buyer_e2e.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 2275[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Full Flow: DISCOVER -> COMPARE -> NEGOTIATE -> POLICY_REJECT -> ADAPT -> READY_FOR_CHECKOUT -> CONFIRM -> JIT -> IDEMPOTENCY -> RAZORPAY -> VERIFY [33m 1730[2mms[22m[39m
-[90mstdout[2m | src/eval/recovery.test.ts[2m > [22m[2mExecution Recovery Tests[2m > [22m[2mTest C: Order NOT created, timeout occurs -> Failed
+[90mstdout[2m | src/eval/recovery.test.ts[2m > [22m[2mExecution Recovery Tests[2m > [22m[2mTest C: Order NOT created, timeout occurs -> Expected Retry Triggered
 [22m[39mRecovery attempt 2 - Order not found. Retrying in 2000ms...
 
- [32mΓ£ô[39m src/eval/precedence.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 3430[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Test: Discount Precedence (Requested > Promo > Policy) [33m 1601[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Test: Discount Precedence with mutated stricter policy [33m 1460[2mms[22m[39m
+ [32mΓ£ô[39m src/eval/receipt.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 2725[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m A. external_receipt length <= 40 [33m 419[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m B. createOrder(receipt = X) then fetchOrderByReceipt(X) -> finds order [33m 896[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m D. timeout after order creation -> EXECUTION_UNKNOWN -> lookup X -> VERIFIED_SUCCESS [33m 864[2mms[22m[39m
+ [32mΓ£ô[39m src/eval/precedence.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 3613[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Test: Discount Precedence (Requested > Promo > Policy) [33m 1532[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Test: Discount Precedence with mutated stricter policy [33m 1624[2mms[22m[39m
 [90mstderr[2m | src/eval/memory.test.ts[2m > [22m[2mAgent Memory & Context[2m > [22m[2m7: Memory DB failure is 
 safe
 [22m[39mMemory Load Failure: SqliteError: no such table: buyer_memory
@@ -38,13 +40,39 @@ safe
   code: [32m'SQLITE_ERROR'[39m
 }
 
- [32mΓ£ô[39m src/eval/concurrency.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 3587[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Test 11: Concurrent Execution (TOCTOU) [33m 1423[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Test 12: Intent-level and Action-level Idempotency Enforcement [33m 1612[2mms[22m[39m
- [32mΓ£ô[39m src/eval/policy.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 4144[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Test 1: Normal purchase [33m 1267[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Test 2 & 3: Discount violations and Prompt Injection [33m 1545[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Test 4: Approval threshold (Deterministic escalation) [33m 958[2mms[22m[39m
+ [32mΓ£ô[39m src/eval/concurrency.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 3745[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Test 11: Concurrent Execution (TOCTOU) [33m 1478[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Test 12: Intent-level and Action-level Idempotency Enforcement [33m 1724[2mms[22m[39m
+ [32mΓ£ô[39m src/eval/policy.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 4523[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Test 1: Normal purchase [33m 1383[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Test 2 & 3: Discount violations and Prompt Injection [33m 1634[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Test 4: Approval threshold (Deterministic escalation) [33m 1074[2mms[22m[39m
+ [32mΓ£ô[39m src/eval/memory.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 5162[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m 1 & 12: Persistence & Explicit preference update [33m 412[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m 2: Freshness (new explicit preference overwrites old) [33m 506[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m 3: Concurrent write conflict (Optimistic Concurrency) [33m 535[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m 4 & 5: Preference size bound (Max 10 keys) [33m 840[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m 6: Reset/delete [33m 606[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m 7: Memory DB failure is safe [33m 524[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m 8: Memory poisoning blocked [33m 424[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m 9 & 10: Customer and Merchant isolation [33m 448[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m 11: Conflict detection [33m 527[2mms[22m[39m
+[90mstdout[2m | src/eval/recovery.test.ts[2m > [22m[2mExecution Recovery Tests[2m > [22m[2mCorrelation ID Test: fetchOrderByReceipt strictly correlates
+[22m[39mRecovery attempt 1 - Order not found. Retrying in 1000ms...
+
+ [32mΓ£ô[39m src/eval/ai_buyer_e2e.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 2158[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Full Flow: DISCOVER -> COMPARE -> NEGOTIATE -> POLICY_REJECT -> ADAPT -> READY_FOR_CHECKOUT -> CONFIRM -> JIT -> IDEMPOTENCY -> RAZORPAY -> VERIFY [33m 1638[2mms[22m[39m
+ [32mΓ£ô[39m src/eval/adversarial.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1885[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Test A1: Deep prompt injection to bypass reserve [33m 1243[2mms[22m[39m
+[90mstdout[2m | src/eval/recovery.test.ts[2m > [22m[2mExecution Recovery Tests[2m > [22m[2mCorrelation ID Test: fetchOrderByReceipt strictly correlates
+[22m[39mRecovery attempt 2 - Order not found. Retrying in 2000ms...
+
+ [32mΓ£ô[39m src/eval/agent-events.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 2131[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m proves the backend persists an immutable, sequential event stream for the UI [33m 1506[2mms[22m[39m
+ [32mΓ£ô[39m src/eval/jit.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1847[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Test: Mutate price after approval -> JIT blocks execution [33m 1212[2mms[22m[39m
+ [32mΓ£ô[39m src/eval/amount_conversion.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1717[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Test AC1: Currency mismatch handling [33m 1063[2mms[22m[39m
 [90mstdout[2m | src/eval/webhook.test.ts[2m > [22m[2mWebhook Tests[2m > [22m[2mWebhook test 1: Valid signature is accepted and deduplicated
 [22m[39m[Webhook] Processing event: order.paid (evt_valid)
 
@@ -52,58 +80,31 @@ safe
 is accepted and deduplicated
 [22m[39m[Webhook] order.paid: no action found for order order_123 / receipt undefined
 
- [32mΓ£ô[39m src/eval/memory.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 5017[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m 1 & 12: Persistence & Explicit preference update [33m 331[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m 2: Freshness (new explicit preference overwrites old) [33m 595[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m 3: Concurrent write conflict (Optimistic Concurrency) [33m 608[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m 4 & 5: Preference size bound (Max 10 keys) [33m 817[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m 6: Reset/delete [33m 509[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m 7: Memory DB failure is safe [33m 515[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m 8: Memory poisoning blocked [33m 379[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m 9 & 10: Customer and Merchant isolation [33m 371[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m 11: Conflict detection [33m 503[2mms[22m[39m
-[90mstdout[2m | src/eval/recovery.test.ts[2m > [22m[2mExecution Recovery Tests[2m > [22m[2mCorrelation ID Test: fetchOrderByReceipt strictly correlates
-[22m[39mRecovery attempt 1 - Order not found. Retrying in 1000ms...
-
- [32mΓ£ô[39m src/eval/webhook.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1719[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Webhook test 1: Valid signature is accepted and deduplicated [33m 385[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Webhook test 2: Invalid signature is rejected [33m 432[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Webhook test 3: Missing secret fails closed [33m 449[2mms[22m[39m
-[90mstdout[2m | src/eval/recovery.test.ts[2m > [22m[2mExecution Recovery Tests[2m > [22m[2mCorrelation ID Test: fetchOrderByReceipt strictly correlates
-[22m[39mRecovery attempt 2 - Order not found. Retrying in 2000ms...
-
- [32mΓ£ô[39m src/eval/adversarial.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1997[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Test A1: Deep prompt injection to bypass reserve [33m 1392[2mms[22m[39m
- [32mΓ£ô[39m src/eval/receipt.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 2442[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m A. external_receipt length <= 40 [33m 468[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m B. createOrder(receipt = X) then fetchOrderByReceipt(X) -> finds order [33m 715[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m D. timeout after order creation -> EXECUTION_UNKNOWN -> lookup X -> VERIFIED_SUCCESS [33m 696[2mms[22m[39m
- [32mΓ£ô[39m src/eval/agent-events.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 2079[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m proves the backend persists an immutable, sequential event stream for the UI [33m 1557[2mms[22m[39m
- [32mΓ£ô[39m src/eval/amount_conversion.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1812[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Test AC1: Currency mismatch handling [33m 1154[2mms[22m[39m
 [90mstdout[2m | src/eval/metric_failure.test.ts[2m > [22m[2mMetric Failure Detection Tests[2m > [22m[2mIntentionally breaks trace propagation and verifies failure state
 [22m[39mGenerating Final PolicyShield Report...
 
- [32mΓ£ô[39m src/eval/metrics.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 991[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Calculates unsafe autonomous actions dynamically from telemetry [33m 356[2mms[22m[39m
- [32mΓ£ô[39m src/eval/metric_failure.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1011[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Intentionally breaks trace propagation and verifies failure state [33m 362[2mms[22m[39m
- [32mΓ£ô[39m src/eval/jit.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1891[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Test: Mutate price after approval -> JIT blocks execution [33m 1346[2mms[22m[39m
- [32mΓ£ô[39m src/eval/recovery.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 8402[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Test B: Order created, Client timeout occurs -> Recovered [33m 453[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Test C: Order NOT created, timeout occurs -> Failed [33m 3768[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m Correlation ID Test: fetchOrderByReceipt strictly correlates [33m 3637[2mms[22m[39m
- [32mΓ£ô[39m src/eval/stale_data.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 615[2mms[22m[39m
- [32mΓ£ô[39m src/eval/security.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 14279[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m 1. Rejects unauthenticated requests if no headers provided [33m 458[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m 2. Enforces Tenant Isolation (Cross-Merchant Data Access) [33m 552[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m 3. Rejects oversized payloads (Express JSON Limit) [33m 413[2mms[22m[39m
-     [33m[2mΓ£ô[22m[39m 4. Applies Rate Limiting [33m 12116[2mms[22m[39m
+ [32mΓ£ô[39m src/eval/metric_failure.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1037[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Intentionally breaks trace propagation and verifies failure state [33m 524[2mms[22m[39m
+ [32mΓ£ô[39m src/eval/metrics.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1063[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Calculates unsafe autonomous actions dynamically from telemetry [33m 458[2mms[22m[39m
+ [32mΓ£ô[39m src/eval/stale_data.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 988[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Test S1: Price changed between negotiation and gate [33m 367[2mms[22m[39m
+ [32mΓ£ô[39m src/eval/recovery.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 8345[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Test B: Order created, Client timeout occurs -> Recovered [33m 517[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Test C: Order NOT created, timeout occurs -> Expected Retry Triggered [33m 3640[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Correlation ID Test: fetchOrderByReceipt strictly correlates [33m 3662[2mms[22m[39m
+ [32mΓ£ô[39m src/eval/webhook.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1672[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Webhook test 1: Valid signature is accepted and deduplicated [33m 409[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Webhook test 2: Invalid signature is rejected [33m 473[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m Webhook test 3: Missing secret fails closed [33m 352[2mms[22m[39m
+ [32mΓ£ô[39m src/eval/security.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 14310[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m 1. Rejects unauthenticated requests if no headers provided [33m 430[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m 2. Enforces Tenant Isolation (Cross-Merchant Data Access) [33m 558[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m 3. Rejects oversized payloads (Express JSON Limit) [33m 520[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m 4. Applies Rate Limiting [33m 12211[2mms[22m[39m
 
 [2m Test Files [22m [1m[32m16 passed[39m[22m[90m (16)[39m
 [2m      Tests [22m [1m[32m37 passed[39m[22m[90m (37)[39m
-[2m   Start at [22m 12:57:09
-[2m   Duration [22m 16.90s[2m (transform 2.32s, setup 4.68s, import 6.67s, tests 55.69s, environment 4ms)[22m
+[2m   Start at [22m 13:14:50
+[2m   Duration [22m 16.41s[2m (transform 1.61s, setup 3.50s, import 4.90s, tests 56.92s, environment 3ms)[22m
 

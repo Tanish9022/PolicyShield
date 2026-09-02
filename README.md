@@ -4,6 +4,8 @@
 
 <h3>AI Policy Compiler + Runtime Guard for Agentic Commerce</h3>
 
+**Razorpay Buildathon: Track 01 — AI Growth & Agentic Commerce**
+
 <p>
   <strong>The LLM proposes.</strong>
   &nbsp;•&nbsp;
@@ -11,6 +13,12 @@
   &nbsp;•&nbsp;
   <strong>The event log proves what happened.</strong>
 </p>
+
+[![Benchmark](https://img.shields.io/badge/Benchmark-1,000_cases-blue)](#)
+[![Safety](https://img.shields.io/badge/Unsafe_Mutations-0-success)](#)
+[![Adversarial](https://img.shields.io/badge/Red_Team_Tests-37/37_Pass-success)](#)
+
+*How do you let an AI negotiate on your behalf without losing your shirt? You build a firewall.*
 
 </div>
 
@@ -227,3 +235,4 @@ Enable: `payment.captured` ✓ `payment.failed` ✓ `order.paid` ✓
 | [Failure Recovery](docs/FAILURE_RECOVERY.md) | Recovery strategy, chaos testing, edge case handling |
 | [Evaluation](docs/EVALUATION.md) | Benchmark design, metrics, baselines, ablation tests |
 | [What Broke](docs/WHAT_BROKE.md) | Real incidents from development and how they were resolved |
+| [Demo Script](DEMO_SCRIPT.md) | 5-Minute Pitch script outlining the problem and live execution |

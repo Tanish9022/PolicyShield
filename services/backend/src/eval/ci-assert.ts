@@ -1,3 +1,4 @@
+process.env.NODE_ENV = 'test';
 import { getDb } from '../db/client';
 
 console.log('Running CI/CD Safety Assertions...');

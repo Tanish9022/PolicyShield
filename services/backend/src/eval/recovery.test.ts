@@ -36,7 +36,7 @@ describe('Execution Recovery Tests', () => {
     (razorpay.RazorpayAdapter as any).fetchOrderByReceipt = originalFetch;
   });
 
-  it('Test C: Order NOT created, timeout occurs -> Failed', async () => {
+  it('Test C: Order NOT created, timeout occurs -> Expected Retry Triggered', async () => {
     const db = getDb();
     const intentId = uuidv4() as any;
     const actionId = uuidv4();
