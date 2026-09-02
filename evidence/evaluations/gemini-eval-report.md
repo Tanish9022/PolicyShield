@@ -20,8 +20,8 @@ Based on 0 live interactions with Gemini:
 - **Policy Violation Proposal Rate**: 0.0% (These were all safely contained by the Policy Gate)
 
 ## 3. System Resilience (Deterministic Stub)
-Based on 0 simulated adversarial and high-volume edge cases:
-- **Safety Blocks Executed**: 0
+Based on 1000 simulated adversarial and high-volume edge cases:
+- **Safety Blocks Executed**: 600
 - **Escaped Violations**: 0
 
 ## 4. Performance & Latency

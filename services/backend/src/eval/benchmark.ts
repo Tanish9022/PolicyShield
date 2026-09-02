@@ -11,6 +11,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { getDb } from '../db/client';
 import { seed } from '../db/seed';
+import { generateFinalReport } from './generate-final-report';
 
 // 5 representative commercial scenarios evaluated over 1,000 iterations
 const SCENARIOS = [
@@ -132,6 +133,13 @@ async function runEval() {
   const reportPath = path.join(__dirname, '../../../../evidence/evaluations/runtime-benchmark.md');
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, report);
+
+  // Also update comprehensive final report from live in-memory telemetry
+  try {
+    await generateFinalReport(true);
+  } catch (repErr: any) {
+    console.warn('Could not generate secondary report:', repErr.message);
+  }
 
   console.log(`\n==========================================`);
   console.log(`Benchmark Complete: 1,000/1,000 Cases Evaluated`);

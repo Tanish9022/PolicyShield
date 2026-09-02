@@ -485,6 +485,7 @@ Open **`http://localhost:5173`** to test autonomous AI buying, live SSE event st
 ## 📚 Complete Documentation Index
 
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**: Deep architectural document, database schema, and state transitions.
+- **[docs/EVALUATION.md](docs/EVALUATION.md)**: Benchmark design, empirical metrics, baseline comparisons, and ablation findings.
 - **[docs/AI_AGENT_SPEC.md](docs/AI_AGENT_SPEC.md)**: Specification for AI Agent discovery, comparison, and negotiation tool contracts.
 - **[docs/SECURITY_AND_GUARDRAILS.md](docs/SECURITY_AND_GUARDRAILS.md)**: Threat model, rate limiting, and tenant isolation specifications.
 - **[docs/FAILURE_RECOVERY.md](docs/FAILURE_RECOVERY.md)**: Two-phase timeout handling and Razorpay recovery loop.
