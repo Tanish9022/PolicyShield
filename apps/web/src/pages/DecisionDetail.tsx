@@ -47,7 +47,7 @@ export default function DecisionDetail() {
       } else {
         alert('Failed to resolve: ' + result.error);
       }
-    } catch (e) {
+    } catch {
       alert('Error resolving action');
     } finally {
       setResolving(false);
@@ -150,12 +150,7 @@ export default function DecisionDetail() {
                 <span className="text-text-muted block text-xs">Idempotency Key</span>
                 <span className="font-mono break-all">{action.idempotency_key}</span>
               </div>
-              {action.action_type === 'APPLY_DISCOUNT' && action.evidence_json && (
-                <div>
-                  <span className="text-text-muted block text-xs">Razorpay Execution</span>
-                  <span className="font-mono text-amber-400">NOT INVOKED (Local Mutation)</span>
-                </div>
-              )}
+
               {action.razorpay_order_id && (
                 <div>
                   <span className="text-text-muted block text-xs">Razorpay Order ID</span>

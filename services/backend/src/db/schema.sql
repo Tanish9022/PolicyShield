@@ -1,5 +1,7 @@
--- PolicyShield SQLite Schema
--- Tables for the audit ledger, action state, policies, and idempotency.
+-- PolicyShield Database Schema
+-- Dual-mode: PostgreSQL (production) and SQLite (test/dev).
+-- SERIAL PRIMARY KEY is PostgreSQL syntax; SQLite silently ignores it and
+-- treats the column as a regular INTEGER — this is intentional for CI compatibility.
 
 -- ─── Policies ───────────────────────────────────────────────────
 

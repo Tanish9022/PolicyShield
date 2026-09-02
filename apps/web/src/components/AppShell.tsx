@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   Shield, LayoutDashboard, FileText, Bot, ListOrdered,
-  AlertOctagon, Search
+  AlertOctagon, Search, Package
 } from 'lucide-react';
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
   { path: '/decisions', label: 'Decisions', icon: ListOrdered },
   { path: '/failures', label: 'Failure Center', icon: AlertOctagon },
   { path: '/audit', label: 'Audit Ledger', icon: Search },
+  { path: '/inventory', label: 'Inventory', icon: Package },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -98,21 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </span>
           </div>
 
-          <div className="flex items-center gap-5 text-[12px]">
-            {[
-              { label: 'Backend', active: true },
-              { label: 'Gemini', active: true },
-              { label: 'Razorpay', active: true },
-            ].map(({ label, active }) => (
-              <div key={label} className="flex items-center gap-1.5">
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-emerald-400' : 'bg-red-400'}`}
-                  style={active ? { boxShadow: '0 0 4px #34d399' } : {}}
-                />
-                <span className="text-white/40">{label}</span>
-              </div>
-            ))}
-          </div>
+
         </header>
 
         {/* Page content */}

@@ -211,3 +211,19 @@ Enable: `payment.captured` ✓ `payment.failed` ✓ `order.paid` ✓
 | `payment.failed` webhook fires | `agent_runs.state → FAILED`, event emitted |
 | Duplicate intent submitted | Idempotency key collision → existing action returned |
 | Cross-merchant request | 403 from auth middleware |
+
+> **[What Broke, and How We Got Out →](docs/WHAT_BROKE.md)**
+> The real incidents — Razorpay amount bugs, recovery spirals, 14 different CI failures, a 2 AM Postgres migration — and how each one was resolved.
+
+---
+
+## Documentation
+
+| Document | Description |
+|:---|:---|
+| [Architecture](docs/ARCHITECTURE.md) | System topology, trust hierarchy, state machine, deployment |
+| [AI Agent Spec](docs/AI_AGENT_SPEC.md) | Agent control plane, tool permissions, output contract |
+| [Security & Guardrails](docs/SECURITY_AND_GUARDRAILS.md) | Threat model, permission model, fail-closed rules |
+| [Failure Recovery](docs/FAILURE_RECOVERY.md) | Recovery strategy, chaos testing, edge case handling |
+| [Evaluation](docs/EVALUATION.md) | Benchmark design, metrics, baselines, ablation tests |
+| [What Broke](docs/WHAT_BROKE.md) | Real incidents from development and how they were resolved |

@@ -16,13 +16,14 @@ export default function MerchantPolicies() {
         setActiveVersion(data);
         if (data.source_text) setPolicyText(data.source_text);
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // Network errors are non-fatal; the UI renders with defaults
     }
   };
 
   useEffect(() => {
-    fetchActivePolicy();
+    void fetchActivePolicy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCompile = async () => {
@@ -40,7 +41,7 @@ export default function MerchantPolicies() {
       } else {
         setCompileStatus('ERROR');
       }
-    } catch (err) {
+    } catch {
       setCompileStatus('ERROR');
     } finally {
       setIsCompiling(false);

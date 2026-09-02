@@ -25,6 +25,8 @@ tmp-test-*.db
 .idea/
 *.swp
 *.swo
+skills-lock.json
+.agents/
 
 # OS
 .DS_Store

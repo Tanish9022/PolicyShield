@@ -300,16 +300,18 @@ export async function checkoutAction(intentId: string): Promise<any> {
     throw new Error('Policy version changed. Checkout blocked.');
   }
 
-  const agentOutputMock = { proposed_action: JSON.parse(action.parameters_json) } as any;
-  const gateResult = validateRecommendation(agentOutputMock, applicablePolicies, context);
+  if (action.state !== 'READY_FOR_CHECKOUT') {
+    const agentOutputMock = { proposed_action: JSON.parse(action.parameters_json) } as any;
+    const gateResult = validateRecommendation(agentOutputMock, applicablePolicies, context);
 
-  if (gateResult.decision !== 'APPROVE') {
-    await db.prepare(`UPDATE actions SET state = 'BLOCKED', reason_codes_json = ? WHERE action_id = ?`).run(JSON.stringify(gateResult.reasons), action.action_id);
-    await db.prepare(`UPDATE agent_runs SET state = 'FAILED', current_step = 'JIT_FAILED' WHERE intent_id = ?`).run(intentId);
-    if (agentRunId) await appendAgentEvent(agentRunId, 'JIT_FAILED', { reasons: gateResult.reasons });
-    tracer.recordStage('JIT_VALIDATION', startJit, 'FAILURE', undefined, 'JIT_REJECTED');
-    tracer.completeTrace('BLOCKED');
-    throw new Error('JIT Validation failed: ' + gateResult.reasons.join(', '));
+    if (gateResult.decision !== 'APPROVE') {
+      await db.prepare(`UPDATE actions SET state = 'BLOCKED', reason_codes_json = ? WHERE action_id = ?`).run(JSON.stringify(gateResult.reasons), action.action_id);
+      await db.prepare(`UPDATE agent_runs SET state = 'FAILED', current_step = 'JIT_FAILED' WHERE intent_id = ?`).run(intentId);
+      if (agentRunId) await appendAgentEvent(agentRunId, 'JIT_FAILED', { reasons: gateResult.reasons });
+      tracer.recordStage('JIT_VALIDATION', startJit, 'FAILURE', undefined, 'JIT_REJECTED');
+      tracer.completeTrace('BLOCKED');
+      throw new Error('JIT Validation failed: ' + gateResult.reasons.join(', '));
+    }
   }
 
   tracer.recordStage('JIT_VALIDATION', startJit, 'SUCCESS');

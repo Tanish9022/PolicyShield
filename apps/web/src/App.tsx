@@ -8,6 +8,7 @@ import Decisions from './pages/Decisions';
 import DecisionDetail from './pages/DecisionDetail';
 import FailureCenter from './pages/FailureCenter';
 import AuditLedger from './pages/AuditLedger';
+import Inventory from './pages/Inventory';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="/decisions/:id" element={<DecisionDetail />} />
           <Route path="/failures" element={<FailureCenter />} />
           <Route path="/audit" element={<AuditLedger />} />
+          <Route path="/inventory" element={<Inventory />} />
         </Routes>
       </AppShell>
     </Router>

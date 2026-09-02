@@ -127,13 +127,30 @@ All webhook processing is **idempotent** — duplicate events are silently ignor
 
 ---
 
-## Frontend Architecture (3-Zone Console)
+```mermaid
+graph LR
+    subgraph Buyer["Buyer Interface"]
+        B1["POST /api/intent → 202"]
+        B2["POST /checkout"]
+    end
 
-<div align="center">
-  <img width="800" src="https://via.placeholder.com/800x250.png?text=3-Zone+Console+Architecture" alt="3-Zone Console" style="display:none;" />
-</div>
+    subgraph Events["Immutable Event Log"]
+        E1["SSE stream"]
+        E2["expandable payload"]
+        E3["sequence numbers"]
+    end
 
-| Buyer Interface <br>*(Chat / intent)* | Immutable Event Log <br>*(append-only stream)* | Agent State <br>*(DB snapshot)* |
+    subgraph State["Agent State"]
+        S1["GET /runs/:id"]
+        S2["candidates / proposal"]
+        S3["policy violations"]
+    end
+
+    Buyer --> Events
+    Events --> State
+```
+
+| Buyer Interface *(Chat / intent)* | Immutable Event Log *(append-only stream)* | Agent State *(DB snapshot)* |
 |:---|:---|:---|
 | `POST /api/intent` <br> `202 → run_id` | `GET /events?after=N` <br> SSE stream | `GET /runs/:id` <br> SSE stream |
 | `POST /checkout` <br> *(explicit confirm)* | expandable payload <br> sequence numbers <br> per-event type color | candidates <br> proposal <br> violations |

@@ -274,7 +274,7 @@ export default function AiBuyer() {
         }]);
         setIsRunning(false);
       }
-    } catch (err) {
+    } catch {
       setChat(prev => [...prev, { role: 'agent', text: 'Cannot reach backend.', ts: Date.now() }]);
       setIsRunning(false);
     }
