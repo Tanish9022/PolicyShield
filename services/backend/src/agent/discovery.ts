@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
+import { generateContentWithRetry } from './gemini-utils';
 import { IntentRequest, CommerceContext, ProductCandidate } from '@policyshield/shared';
 import { TelemetryTracer } from '../gateway/telemetry';
 
@@ -68,7 +69,7 @@ Return an empty array if nothing matches (do NOT invent products).
     
     try {
       const startGemini = performance.now();
-      const response = await ai.models.generateContent({
+      const response = await generateContentWithRetry(ai, {
         model: 'gemini-3.6-flash',
         contents: systemPrompt,
         config: {

@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
+import { generateContentWithRetry } from './gemini-utils';
 import { IntentRequest, ProductCandidate, BuyerDecision } from '@policyshield/shared';
 import { TelemetryTracer } from '../gateway/telemetry';
 
@@ -63,7 +64,7 @@ Constraints:
     
     try {
       const startGemini = performance.now();
-      const response = await ai.models.generateContent({
+      const response = await generateContentWithRetry(ai, {
         model: 'gemini-3.6-flash',
         contents: systemPrompt,
         config: {

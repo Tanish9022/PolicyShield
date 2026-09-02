@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
+import { generateContentWithRetry } from './gemini-utils';
 import { IntentRequest, ProductCandidate, ProposedAction } from '@policyshield/shared';
 import { TelemetryTracer } from '../gateway/telemetry';
 
@@ -75,7 +76,7 @@ You must ADAPT your proposal to comply with the merchant's allowed_value or poli
     
     try {
       const startGemini = performance.now();
-      const response = await ai.models.generateContent({
+      const response = await generateContentWithRetry(ai, {
         model: 'gemini-3.6-flash',
         contents: systemPrompt,
         config: {

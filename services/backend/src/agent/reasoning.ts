@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
+import { generateContentWithRetry } from './gemini-utils';
 import { CommerceContext, IntentRequest, AgentOutput } from '@policyshield/shared';
 import { TelemetryTracer } from '../gateway/telemetry';
 import { getStubRecommendation } from './stub-adapter';
@@ -41,7 +42,7 @@ CRITICAL INSTRUCTIONS:
   const startGemini = performance.now();
   let response;
   try {
-    response = await ai!.models.generateContent({
+    response = await generateContentWithRetry(ai!, {
       model: 'gemini-3.6-flash',
       contents: systemPrompt,
       config: {
