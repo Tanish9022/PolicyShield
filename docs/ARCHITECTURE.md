@@ -1,200 +1,300 @@
 <div align="center">
-  <h1>🛡️ PolicyShield Architecture</h1>
-  <p>PolicyShield strictly separates AI inference from authoritative state. The core philosophy is that AI should be allowed to reason and adapt, but the financial boundaries must remain completely deterministic and verifiable.</p>
-  <blockquote>
-    <strong>The LLM proposes. The deterministic system decides. The event log proves what happened.</strong>
-  </blockquote>
+
+# 🛡️ PolicyShield: Technical Architecture
+
+### AI Policy Compiler & Runtime Guard for Agentic Commerce
+
+**Razorpay AI Builder Intern Application &nbsp;•&nbsp; Track: AI Growth & Agentic Commerce**
+
+<p>
+  <strong>Probabilistic Reasoning Engine</strong> (Gemini 1.5 Flash)
+  &nbsp;•&nbsp;
+  <strong>Deterministic Policy Gate</strong> (Synchronous Rules)
+  &nbsp;•&nbsp;
+  <strong>Razorpay Test-Mode Payment Engine</strong>
+</p>
+
 </div>
 
-<hr/>
+---
 
-## The Trust Hierarchy
+## 🧭 Architectural Philosophy
+
+PolicyShield is engineered around a single invariant:
+> **The LLM proposes. The deterministic gate decides. The immutable event stream proves what happened.**
+
+In autonomous agentic commerce, AI models negotiate, find products, and advocate for buyers. However, placing a probabilistic model in direct control of financial mutations introduces fatal commercial risks: price hallucinations, unauthorized discounts, inventory depletion, and duplicate debits. PolicyShield provides a provable, zero-trust boundary separating AI reasoning from financial execution.
+
+---
+
+## 🏗️ End-to-End System Architecture
 
 ```mermaid
 graph TD
-    A[POLICY<br><i>Authority</i>] --> B[CURRENT COMMERCE CONTEXT<br><i>Current Truth</i>]
-    B --> C[BUYER MEMORY<br><i>Context/History</i>]
-    C --> D[LLM INFERENCE<br><i>Proposal/Plan</i>]
+    subgraph Client["🌐 Client & Protocol Layer"]
+        UI["🖥️ 3-Zone Web Console (React + Vite)"]
+        SSEStream["📡 Server-Sent Events (/api/v1/runs/:id/stream)"]
+        BuyerAgent["🤖 Autonomous AI Buyer Agent (HTTP Intent Protocol)"]
+    end
 
-    classDef authority fill:#fca5a5,stroke:#b91c1c,color:#000
-    classDef truth fill:#fde68a,stroke:#d97706,color:#000
-    classDef memory fill:#bfdbfe,stroke:#1d4ed8,color:#000
-    classDef ai fill:#c4b5fd,stroke:#6d28d9,color:#000
+    subgraph Reasoning["🧠 Untrusted AI Reasoning Boundary (Google Gemini 1.5 Flash)"]
+        Discovery["🔎 Candidate Discovery Engine"]
+        Comparison["⚖️ Candidate Comparison Engine"]
+        Negotiation["💬 Commercial Proposal Engine"]
+        Adaptation["🔄 Multi-Turn Adaptation Loop (Max 3 Attempts)"]
+    end
 
-    class A authority
-    class B truth
-    class C memory
-    class D ai
+    subgraph PolicyEngine["🛡️ PolicyShield Deterministic Runtime Guard"]
+        Compiler["📐 Policy Graph Compiler (Typed Business Rules)"]
+        PolicyGate["🚪 Synchronous Policy Gate (Hard Constraint Evaluator)"]
+        JITGuard["⏱️ JIT Checkout Validator (Price, Stock & Version Freshness)"]
+        Idempotency["🔑 Cryptographic Idempotency Hash (sha256(intent_id))"]
+    end
+
+    subgraph Authoritative["💳 Authoritative Financial & Storage Boundary"]
+        Razorpay["⚡ Razorpay Test Mode API (Orders & Payments)"]
+        Webhooks["🪝 HMAC-SHA256 Webhook Verification"]
+        Recovery["🩹 Two-Phase Fault Recovery Engine (EXECUTION_UNKNOWN)"]
+        Storage[("📦 Event-Sourced Storage (SQLite WAL / Neon Postgres)")]
+    end
+
+    BuyerAgent -->|POST /api/intent| Discovery
+    UI -->|POST /api/intent| Discovery
+    Discovery --> Comparison
+    Comparison --> Negotiation
+    Negotiation -->|Structured Proposal| PolicyGate
+
+    PolicyGate -->|POLICY_REJECT + Metadata| Adaptation
+    Adaptation -->|Revised Proposal| PolicyGate
+    PolicyGate -->|POLICY_APPROVE| Storage
+
+    Storage -.->|Stream Events| SSEStream
+    SSEStream -.-> UI
+
+    UI -->|POST /api/checkout| JITGuard
+    JITGuard -->|Validated Current State| Idempotency
+    Idempotency --> Razorpay
+    Razorpay --> Webhooks
+    Webhooks --> Storage
+    Recovery --> Razorpay
 ```
-
-1. **MEMORY**: Contains explicit preferences and historical interactions. Memory is inherently stale and is *never* authoritative for price, inventory, promotions, policy, authorization, or payment state.
-2. **COMMERCE CONTEXT**: The current truth. Prices and inventory fetched Just-In-Time (JIT) from the database before checkout validation.
-3. **POLICY**: The merchant's hard business rules (e.g. `MAX_DISCOUNT`). It dictates what is permitted.
-4. **RAZORPAY WEBHOOK**: The external payment truth. `payment.captured` is the only acceptable proof of payment success. `payment.failed` is the authoritative failure signal.
 
 ---
 
-## The Agentic Flow
+## 🏛️ The Trust Hierarchy
 
-<details>
-<summary><b>Click to View Agentic Flow Diagram</b></summary>
+Authoritative commercial state strictly overrides AI preferences and historical memory:
+
+```mermaid
+graph TD
+    A["1. Hard Merchant Policy<br/><i>(Absolute Authority: Max Discount, Threshold, Reserve)</i>"]
+    B["2. Current Commerce Context<br/><i>(Authoritative Truth: Live Catalog Price & Real-Time Stock)</i>"]
+    C["3. Razorpay Webhook Signatures<br/><i>(Payment Authority: HMAC-SHA256 Verified)</i>"]
+    D["4. Buyer Historical Memory<br/><i>(Stale Context: Past Preferences, Prior Sizes)</i>"]
+    E["5. LLM Inference & Generation<br/><i>(Zero Authority: Structured Proposals Only)</i>"]
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+
+    style A fill:#fee2e2,stroke:#ef4444,stroke-width:2px,color:#991b1b
+    style B fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#92400e
+    style C fill:#dcfce7,stroke:#10b981,stroke-width:2px,color:#166534
+    style D fill:#dbeafe,stroke:#3b82f6,stroke-width:2px,color:#1e40af
+    style E fill:#f3e8ff,stroke:#a855f7,stroke-width:2px,color:#6b21a8
+```
+
+<table width="100%">
+  <thead>
+    <tr>
+      <th width="20%">Tier</th>
+      <th width="35%">Component</th>
+      <th width="45%">Authority Level &amp; Role</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Tier 1</strong></td>
+      <td><strong>Merchant Policy Graph</strong></td>
+      <td>Absolute constraint. Defines maximum discount ceilings, required human escalation amounts, and inventory reserve levels.</td>
+    </tr>
+    <tr>
+      <td><strong>Tier 2</strong></td>
+      <td><strong>Commerce Context</strong></td>
+      <td>Live catalog truth. Real-time prices and inventory levels fetched Just-In-Time from the database.</td>
+    </tr>
+    <tr>
+      <td><strong>Tier 3</strong></td>
+      <td><strong>Razorpay Webhooks</strong></td>
+      <td>External payment truth. <code>payment.captured</code> is the sole acceptable proof of financial success.</td>
+    </tr>
+    <tr>
+      <td><strong>Tier 4</strong></td>
+      <td><strong>Buyer Memory</strong></td>
+      <td>Historical preference context. Memory is treated as potentially stale and cannot override live prices or policies.</td>
+    </tr>
+    <tr>
+      <td><strong>Tier 5</strong></td>
+      <td><strong>LLM Inference</strong></td>
+      <td>Zero financial authority. Proposes commercial intentions; cannot mutate records or authorize payments.</td>
+    </tr>
+  </tbody>
+</table>
+
+---
+
+## 🔄 End-to-End Transactable Sequence Flow
 
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant A as Agent Runtime
-    participant G as Gemini LLM
-    participant P as Policy Gate
-    participant W as Webhook
+    autonumber
+    actor Buyer as AI Buyer / User
+    participant Gateway as PolicyShield Gateway
+    participant Gemini as Gemini 1.5 Flash (Agent)
+    participant Gate as Deterministic Policy Gate
+    participant DB as Event-Sourced Storage
+    participant Razorpay as Razorpay Test Mode API
 
-    U->>A: POST /api/intent
-    A-->>U: 202 Accepted (run_id)
-    Note over A: agent_runs.state = NEW
+    Buyer->>Gateway: POST /api/intent ("MacBook Pro with 50% discount")
+    Gateway->>DB: Record Intent (state: NEW)
+    Gateway-->>Buyer: 202 Accepted (agent_run_id)
+    Note over Buyer,Gateway: Frontend establishes SSE stream (/api/v1/runs/:id/stream)
 
-    A->>A: DISCOVER candidates
-    A->>A: COMPARE & select
-    
-    loop Adaptation Loop (Max 3)
-        A->>G: PROPOSE
-        G-->>A: Proposal
-        A->>P: Validate against Policy
-        alt REJECT
-            P-->>A: REJECT
-            Note over A: Adapt & Re-propose
-        else APPROVE
-            P-->>A: APPROVE
-            Note over A: agent_runs.state = READY_FOR_CHECKOUT
-        end
+    Gateway->>Gemini: Discover & Select Product Candidates
+    Gemini-->>Gateway: Selected Candidate (prod_macbook, ₹1,50,000)
+    Gateway->>DB: Append Event (DISCOVER, COMPARE)
+
+    rect rgb(254, 242, 242)
+        Note over Gateway,Gate: Multi-Turn Adaptive Negotiation (Max 3 Attempts)
+        Gateway->>Gemini: Formulate Commercial Proposal
+        Gemini-->>Gateway: Proposal (discount: 50%, amount: ₹75,000)
+        Gateway->>Gate: Validate against Typed Rules
+        Gate-->>Gateway: POLICY_REJECT (Violation: max_discount=15%, allowed: 15%)
+        Gateway->>DB: Append Event (POLICY_REJECT, ADAPT)
+        Gateway->>Gemini: Feedback Policy Metadata (allowed_discount: 15%)
+        Gemini-->>Gateway: Adapted Proposal (discount: 15%, amount: ₹1,27,500)
+        Gateway->>Gate: Re-validate Adapted Proposal
+        Gate-->>Gateway: POLICY_APPROVE (State: VALIDATED)
     end
 
-    U->>A: POST /api/intent/:id/checkout
-    A->>A: JIT Price & Policy re-validation
-    A->>A: Idempotency check
-    A->>W: Razorpay createOrder
-    
-    alt Payment Captured
-        W-->>A: payment.captured
-        Note over A: agent_runs.state = COMPLETED
-    else Payment Failed
-        W-->>A: payment.failed
-        Note over A: agent_runs.state = FAILED
-    else Timeout
-        Note over A: agent_runs.state = EXECUTION_UNKNOWN
+    Gateway->>DB: State -> READY_FOR_CHECKOUT
+    Buyer->>Gateway: POST /api/checkout (Confirm)
+
+    rect rgb(240, 253, 244)
+        Note over Gateway,Razorpay: JIT Verification & Financial Mutation
+        Gateway->>Gate: JIT Re-Validation (Live Price, Stock Reserve, Policy Version)
+        Gate-->>Gateway: JIT Verification Passed
+        Gateway->>Razorpay: Create Order (Idempotency Receipt: ps_sha256(intent_id))
+        Razorpay-->>Gateway: order_id (e.g. order_O123)
+        Razorpay-->>Gateway: Webhook: payment.captured (HMAC Verified)
+        Gateway->>DB: State -> VERIFIED_SUCCESS
     end
 ```
 
-</details>
-
 ---
 
-## Event-Driven State Machine
+## ⚡ State Machine & Two-Phase Recovery
+
+The lifecycle of an autonomous transaction is strictly modeled with zero ambiguous states:
 
 ```mermaid
 stateDiagram-v2
+    [*] --> NEW
     NEW --> DISCOVERING
     DISCOVERING --> COMPARING
     COMPARING --> NEGOTIATING
     NEGOTIATING --> WAITING_POLICY
-    
-    WAITING_POLICY --> POLICY_REJECTED: REJECT loop
-    POLICY_REJECTED --> WAITING_POLICY: ADAPT
-    
-    WAITING_POLICY --> READY_FOR_CHECKOUT: final approve
-    
-    READY_FOR_CHECKOUT --> EXECUTING
-    EXECUTING --> COMPLETED
-    EXECUTING --> EXECUTION_UNKNOWN
-    EXECUTION_UNKNOWN --> COMPLETED: webhook success
-    EXECUTION_UNKNOWN --> FAILED: webhook fail
-    
-    WAITING_POLICY --> BLOCKED: max retries / hard block
-    WAITING_POLICY --> ESCALATED: requires human
+
+    WAITING_POLICY --> POLICY_REJECTED: Constraint Violated
+    POLICY_REJECTED --> ADAPTING: Feed Back Policy Metadata
+    ADAPTING --> WAITING_POLICY: Re-evaluate Adapted Proposal
+    POLICY_REJECTED --> BLOCKED: Exceeded 3 Adaptation Attempts
+
+    WAITING_POLICY --> ESCALATED: Order > Threshold (Requires Human)
+    WAITING_POLICY --> READY_FOR_CHECKOUT: Policy Approved
+
+    READY_FOR_CHECKOUT --> JIT_VALIDATING: Checkout Confirmed
+    JIT_VALIDATING --> BLOCKED: Stale Price / Stock Drop / Policy Mismatch
+    JIT_VALIDATING --> EXECUTING: JIT Passed
+
+    EXECUTING --> VERIFIED_SUCCESS: Webhook: payment.captured
+    EXECUTING --> VERIFIED_FAILURE: Webhook: payment.failed
+    EXECUTING --> EXECUTION_UNKNOWN: Gateway Timeout / Network Drop
+
+    EXECUTION_UNKNOWN --> RECOVERING: Two-Phase Startup / Webhook Scan
+    RECOVERING --> VERIFIED_SUCCESS: Order Found on Razorpay
+    RECOVERING --> VERIFIED_FAILURE: Order Absent on Razorpay
+
+    VERIFIED_SUCCESS --> [*]
+    VERIFIED_FAILURE --> [*]
+    BLOCKED --> [*]
+    ESCALATED --> [*]
 ```
 
-`agent_events` is the **immutable, append-only, sequence-numbered** record of every transition. The frontend polls it and renders it — it never infers state.
+---
+
+## 🛡️ Key Failure Mitigations
+
+<table width="100%">
+  <thead>
+    <tr>
+      <th width="25%">Failure Vector</th>
+      <th width="35%">Mechanism</th>
+      <th width="40%">Deterministic Guarantee</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Prompt Injection</strong></td>
+      <td>Deterministic Policy Gate</td>
+      <td>Hostile buyer instructions cannot exceed compiled rule parameters. Violations are rejected and clamped to policy limits.</td>
+    </tr>
+    <tr>
+      <td><strong>TOCTOU Concurrency</strong></td>
+      <td>Optimistic Locking &amp; Atomic Transactions</td>
+      <td>Parallel executions on the same action ID are serialized; exactly one succeeds and duplicates are blocked.</td>
+    </tr>
+    <tr>
+      <td><strong>Stale Price Surge</strong></td>
+      <td>JIT Checkout Validation</td>
+      <td>Re-evaluates catalog price at the millisecond of payment; blocks stale quotes from executing.</td>
+    </tr>
+    <tr>
+      <td><strong>Network Timeout</strong></td>
+      <td>Two-Phase Recovery Loop</td>
+      <td>Reconciles <code>EXECUTION_UNKNOWN</code> via idempotent receipts on Razorpay before retrying.</td>
+    </tr>
+    <tr>
+      <td><strong>Replay Attacks</strong></td>
+      <td>Cryptographic Idempotency Keys</td>
+      <td>Duplicate intent submissions return the existing action without creating duplicate orders.</td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
-## Webhook State Machine
-
-| Event | Action | agent_runs update |
-|---|---|---|
-| `payment.captured` | `actions.state → VERIFIED_SUCCESS` | `state → COMPLETED` + `VERIFIED_SUCCESS` agent_event |
-| `payment.failed` | `actions.state → VERIFIED_FAILURE` | `state → FAILED` + `PAYMENT_FAILED` agent_event |
-| `order.paid` | Recovery path for `EXECUTION_UNKNOWN` | Same as `payment.captured` |
-
-All webhook processing is **idempotent** — duplicate events are silently ignored via `webhook_events.event_id` PRIMARY KEY.
-
----
+## 📦 Deployment Topology
 
 ```mermaid
 graph LR
-    subgraph Buyer["Buyer Interface"]
-        B1["POST /api/intent → 202"]
-        B2["POST /checkout"]
+    subgraph VercelCDN["🌐 Vercel Edge Network"]
+        FrontendApp["🖥️ React 18 + Vite Frontend<br/>(apps/web)"]
     end
 
-    subgraph Events["Immutable Event Log"]
-        E1["SSE stream"]
-        E2["expandable payload"]
-        E3["sequence numbers"]
+    subgraph RenderPlatform["☁️ Render Cloud Service"]
+        BackendAPI["⚡ Node.js 22 LTS API Gateway<br/>(services/backend)"]
+        Disk[("💾 Persistent NVMe Disk<br/>(/var/data/policyshield.db)")]
     end
 
-    subgraph State["Agent State"]
-        S1["GET /runs/:id"]
-        S2["candidates / proposal"]
-        S3["policy violations"]
+    subgraph RazorpayCloud["💳 Razorpay Infrastructure"]
+        RazorpayAPIs["API: /v1/orders, /v1/payments"]
+        RazorpayHooks["Webhook: payment.captured, order.paid"]
     end
 
-    Buyer --> Events
-    Events --> State
+    FrontendApp -- "VITE_API_URL (HTTPS + SSE)" --> BackendAPI
+    BackendAPI -- "SQLite WAL Mode" --> Disk
+    BackendAPI -- "REST API (Test Mode Keys)" --> RazorpayAPIs
+    RazorpayHooks -- "HMAC-SHA256 Signed" --> BackendAPI
 ```
-
-| Buyer Interface *(Chat / intent)* | Immutable Event Log *(append-only stream)* | Agent State *(DB snapshot)* |
-|:---|:---|:---|
-| `POST /api/intent` <br> `202 → run_id` | `GET /events?after=N` <br> SSE stream | `GET /runs/:id` <br> SSE stream |
-| `POST /checkout` <br> *(explicit confirm)* | expandable payload <br> sequence numbers <br> per-event type color | candidates <br> proposal <br> violations |
-
-**The frontend is a renderer, not an agent.** It never infers state, never calculates business logic, and never holds authoritative data. `agent_runs.state` is the source of truth.
-
----
-
-## System Resilience
-
-- **Idempotency**: All operations bound to a strict `intent_id`. Duplicate POSTs return the existing action.
-- **JIT Validation**: Prices and policy are re-validated at checkout time, not at proposal time.
-- **Adaptation Loop**: LLM proposes → Policy rejects → LLM adapts (max 3 attempts). Model errors are contained deterministically.
-- **Recovery**: `EXECUTION_UNKNOWN` states are resolved via `order.paid` / `payment.captured` webhooks on restart.
-- **Memory Resilience**: If buyer memory is unavailable, the AI proceeds safely using only Commerce Context.
-
----
-
-## Deployment Topology
-
-```mermaid
-graph LR
-    subgraph Vercel
-        F[Frontend CDN<br>React + Vite]
-    end
-    
-    subgraph Render
-        B[Web Service<br>Node.js + Express]
-        D[(Persistent Disk<br>SQLite WAL)]
-    end
-    
-    subgraph Razorpay
-        W[Webhooks]
-    end
-
-    F -- "VITE_API_URL" --> B
-    B -- "DB_PATH=/var/data/policyshield.db" --> D
-    W -- "payment.captured / failed" --> B
-```
-
-### Razorpay Webhook Setup
-
-1. Render Dashboard → copy your public URL (e.g. `https://policyshield-api.onrender.com`)
-2. Razorpay Dashboard → **Settings → Webhooks → Add Webhook**
-3. URL: `https://policyshield-api.onrender.com/api/webhooks/razorpay`
-4. Enable events: `payment.captured` ✓ `payment.failed` ✓ `order.paid` ✓
-5. Copy the Webhook Secret → set `RAZORPAY_WEBHOOK_SECRET` in Render env vars

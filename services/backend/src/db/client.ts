@@ -57,10 +57,9 @@ export class PgWrapper {
 }
 
 let dbWrapper: PgWrapper | null = null;
-const isTest = process.env.NODE_ENV === 'test';
 
 export function getDb(): any {
-  if (isTest) {
+  if (process.env.NODE_ENV === 'test') {
     if (sqliteDb) return sqliteDb;
     sqliteDb = new Database(process.env.DB_PATH || ':memory:');
     try {

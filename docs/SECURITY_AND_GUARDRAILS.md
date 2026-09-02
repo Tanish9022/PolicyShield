@@ -1,6 +1,8 @@
-# Security & Guardrails
-
-PolicyShield is a fintech-adjacent system. The primary security objective is to ensure that a probabilistic AI component cannot independently create an unsafe financial mutation.
+<div align="center">
+  <h1>🛡️ PolicyShield Security & Guardrails</h1>
+  <p><strong>Razorpay AI Builder Intern Application &nbsp;•&nbsp; Track: AI Growth & Agentic Commerce</strong></p>
+  <p>Ensuring probabilistic AI components cannot independently execute unsafe financial mutations.</p>
+</div>
 
 ## Security principles
 

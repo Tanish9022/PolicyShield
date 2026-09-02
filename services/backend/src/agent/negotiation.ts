@@ -48,7 +48,10 @@ You must ADAPT your proposal to comply with the merchant's allowed_value or poli
   if (process.env.STUB_AI) {
     // Stub behavior
     let discount = 0;
-    if (intent.buyer_input.toLowerCase().includes('maximum discount') || intent.buyer_input.includes('20%')) {
+    const discountMatch = intent.buyer_input.match(/(\d+)%\s*(?:discount|off)?/i);
+    if (discountMatch) {
+       discount = parseInt(discountMatch[1], 10);
+    } else if (intent.buyer_input.toLowerCase().includes('maximum discount') || intent.buyer_input.includes('20%')) {
        discount = 20;
     } else if (intent.buyer_input.toLowerCase().includes('for free')) {
        discount = 100;

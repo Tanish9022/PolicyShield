@@ -1,6 +1,8 @@
-# Failure Recovery
-
-## Philosophy
+<div align="center">
+  <h1>🛡️ PolicyShield Failure Recovery</h1>
+  <p><strong>Razorpay AI Builder Intern Application &nbsp;•&nbsp; Track: AI Growth & Agentic Commerce</strong></p>
+  <p>Two-Phase Recovery, Idempotent Operations, and State Machine Self-Healing</p>
+</div>
 
 **External failure does not imply business-action failure.**
 

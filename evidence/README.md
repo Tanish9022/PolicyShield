@@ -14,24 +14,25 @@ This folder contains the empirical evidence collected during the final system ev
 ## Measured Results
 
 * **1,000-case Benchmark**: 1000/1000 safe executions. 0 unsafe autonomous actions.
-* **37-test Adversarial Suite**: 37/37 tests pass across 16 test files — covering policy enforcement, prompt injection, idempotency, webhook deduplication, concurrent execution (TOCTOU), JIT validation, rate limiting, tenant isolation, and EXECUTION_UNKNOWN recovery.
+* **13-case Live Adversarial Suite**: 13/13 passing tests — covering discount adaptation, prompt injection, idempotency deduping, JIT validation, TOCTOU concurrency, and two-phase Razorpay recovery.
+* **37-test Vitest Suite**: 37/37 tests pass across 16 test files.
 * **Gemini Evaluation**: Deterministic gate intercepted 100% of LLM hallucinations or unauthorized discount proposals.
 
 ## How to Reproduce
 
 ```bash
-# Run the full test suite (stubbed AI + Razorpay)
-NODE_ENV=test STUB_AI=true STUB_RAZORPAY=true npm run test:all
-
-# Run CI safety invariants (0 unsafe mutations)
-NODE_ENV=test npm run eval:ci
-
-# Run 1,000-case benchmark
+# 1. Run 1,000-case deterministic benchmark
 npm run eval:benchmark
 
-# Run live Gemini evaluation (requires GEMINI_API_KEY)
-npm run eval:gemini
+# 2. Run 13-case live adversarial test suite
+npm run eval:live-adversarial
 
-# Generate final report
-npm run eval:report
+# 3. Run CI safety invariants (0 unsafe mutations)
+npm run eval:ci
+
+# 4. Run full Vitest suite (37 tests across 16 files)
+npm run test:all
+
+# 5. Run live Gemini evaluation (requires GEMINI_API_KEY)
+npm run eval:gemini
 ```

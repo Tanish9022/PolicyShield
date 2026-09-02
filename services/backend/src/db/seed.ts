@@ -3,6 +3,8 @@ import { PolicyGraph } from '@policyshield/shared';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
 import path from 'path';
+import { getDb, closeDb } from './client';
+
 dotenv.config({ path: path.join(__dirname, '../../../../.env') });
 
 const graph: PolicyGraph = {
@@ -38,9 +40,7 @@ const graph: PolicyGraph = {
   ]
 };
 
-import { getDb, closeDb } from './client';
-
-async function seed() {
+export async function seed(shouldCloseDb: boolean = false) {
   await storePolicies(graph);
   console.log('Seeded policies for merchant_1');
 
@@ -55,7 +55,14 @@ async function seed() {
   await db.prepare(`INSERT INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_airpods', 'merchant_1', 50) ON CONFLICT (product_id) DO NOTHING`).run();
   console.log('Seeded Context DB (Products & Inventory)');
   
-  closeDb();
+  if (shouldCloseDb) {
+    closeDb();
+  }
 }
 
-seed().catch(console.error);
+if (require.main === module) {
+  seed(true).catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
+}

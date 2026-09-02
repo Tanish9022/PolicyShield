@@ -13,7 +13,8 @@
     "test:all": "vitest run",
     "eval:gemini": "tsx src/eval/gemini-eval.ts",
     "eval:benchmark": "tsx src/eval/benchmark.ts",
-    "eval:redteam": "vitest run --testNamePattern='redteam'",
+    "eval:redteam": "vitest run src/eval/security.test.ts src/eval/adversarial.test.ts",
+    "eval:live-adversarial": "tsx src/eval/live-tests.ts",
     "eval:ci": "tsx src/eval/ci-assert.ts",
     "eval:business": "tsx src/eval/business-value-experiment.ts",
     "eval:report": "tsx src/eval/generate-final-report.ts"

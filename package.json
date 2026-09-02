@@ -19,6 +19,7 @@
     "eval:gemini": "npm run eval:gemini --workspace=services/backend",
     "eval:benchmark": "npm run eval:benchmark --workspace=services/backend",
     "eval:redteam": "npm run eval:redteam --workspace=services/backend",
+    "eval:live-adversarial": "npm run eval:live-adversarial --workspace=services/backend",
     "eval:ci": "npm run eval:ci --workspace=services/backend",
     "eval:report": "npm run eval:report --workspace=services/backend"
   },
