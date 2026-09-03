@@ -32,14 +32,25 @@ router.post('/inventory', async (req, res) => {
     }
 
     const db = getDb();
-    // Assuming merchant_1 for demo
-    await db.prepare(`INSERT INTO products (product_id, merchant_id, name, price, currency) VALUES (?, 'merchant_1', ?, ?, 'INR') ON CONFLICT (product_id) DO UPDATE SET name=excluded.name, price=excluded.price`).run(product_id, name, price);
-    await db.prepare(`INSERT INTO inventory (product_id, merchant_id, stock_level) VALUES (?, 'merchant_1', ?) ON CONFLICT (product_id) DO UPDATE SET stock_level=excluded.stock_level`).run(product_id, stock_level);
+    const parsedPrice = Number(price);
+    const parsedStock = Number(stock_level);
+
+    await db.prepare(`
+      INSERT INTO products (product_id, merchant_id, name, price, currency) 
+      VALUES (?, 'merchant_1', ?, ?, 'INR') 
+      ON CONFLICT (product_id) DO UPDATE SET name = ?, price = ?
+    `).run(product_id, name, parsedPrice, name, parsedPrice);
+
+    await db.prepare(`
+      INSERT INTO inventory (product_id, merchant_id, stock_level) 
+      VALUES (?, 'merchant_1', ?) 
+      ON CONFLICT (product_id) DO UPDATE SET stock_level = ?
+    `).run(product_id, parsedStock, parsedStock);
     
     res.json({ success: true, product_id });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to save inventory:', error);
-    res.status(500).json({ error: 'Failed to save inventory' });
+    res.status(500).json({ error: error?.message || 'Failed to save inventory' });
   }
 });
 

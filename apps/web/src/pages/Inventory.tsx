@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Package, Plus, Loader2 } from 'lucide-react';
+import { API_BASE } from '../lib/api';
 
 interface InventoryItem {
   product_id: string;
@@ -14,6 +15,7 @@ export default function Inventory() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     product_id: '',
@@ -24,9 +26,9 @@ export default function Inventory() {
 
   const fetchInventory = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/merchant/inventory');
+      const res = await fetch(`${API_BASE}/api/merchant/inventory`);
       const data = await res.json();
-      setItems(data);
+      setItems(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch inventory:', error);
     } finally {
@@ -42,22 +44,28 @@ export default function Inventory() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setErrorMessage(null);
     try {
-      await fetch('http://localhost:3001/api/merchant/inventory', {
+      const res = await fetch(`${API_BASE}/api/merchant/inventory`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          product_id: formData.product_id,
-          name: formData.name,
+          product_id: formData.product_id.trim(),
+          name: formData.name.trim(),
           price: Number(formData.price),
           stock_level: Number(formData.stock_level)
         })
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to save item');
+      }
       setShowModal(false);
       setFormData({ product_id: '', name: '', price: '', stock_level: '' });
-      fetchInventory(); // refresh list
-    } catch (error) {
+      await fetchInventory(); // refresh list
+    } catch (error: any) {
       console.error('Failed to save item:', error);
+      setErrorMessage(error.message || 'Failed to save item');
     } finally {
       setSubmitting(false);
     }
@@ -136,6 +144,11 @@ export default function Inventory() {
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {errorMessage && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400">
+                  {errorMessage}
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-medium text-white/60 mb-1.5">Product ID</label>
                 <input 
