@@ -17,11 +17,11 @@
   <a href="evidence/evaluations/gemini-eval-report.md"><img src="https://img.shields.io/badge/Gemini_Live_Eval-50%2F50_Scenarios-10b981?style=flat-square&logo=google&logoColor=white" alt="Gemini Eval"/></a>
   <a href="evidence/benchmark-results/benchmark-run.txt"><img src="https://img.shields.io/badge/Benchmark-1,000_Cases_Verified-0ea5e9?style=flat-square&logo=speedtest&logoColor=white" alt="Benchmark"/></a>
   <a href="evidence/evaluations/runtime-benchmark.md"><img src="https://img.shields.io/badge/Unsafe_Autonomous_Actions-0%25-10b981?style=flat-square&logo=shield&logoColor=white" alt="Safety"/></a>
-  <a href="#verification--reproducibility"><img src="https://img.shields.io/badge/Vitest_Suite-37%2F37_Pass-10b981?style=flat-square&logo=vitest&logoColor=white" alt="Vitest"/></a>
-  <a href="#key-engineering-decisions"><img src="https://img.shields.io/badge/Razorpay-Test_Mode_Integrated-3b82f6?style=flat-square&logo=razorpay&logoColor=white" alt="Razorpay"/></a>
+  <a href="#-verification--reproducibility"><img src="https://img.shields.io/badge/Vitest_Suite-37%2F37_Pass-10b981?style=flat-square&logo=vitest&logoColor=white" alt="Vitest"/></a>
+  <a href="docs/FAILURE_RECOVERY.md"><img src="https://img.shields.io/badge/Razorpay-Test_Mode_Integrated-3b82f6?style=flat-square&logo=razorpay&logoColor=white" alt="Razorpay"/></a>
 </p>
 
-<p><em>Making merchants safely transactable by autonomous AI buyers — while maximizing conversion through deterministic policy adaptation.</em></p>
+<p><em>PolicyShield doesn't just block unauthorized losses — it actively maximizes merchant conversion by adapting rejected proposals into compliant, closed Razorpay sales.</em></p>
 
 </div>
 
@@ -33,7 +33,7 @@ As autonomous AI shopping protocols (NPCI UAP, ACP, x402) emerge, merchants want
 
 **PolicyShield** solves this by establishing a zero-trust boundary between AI reasoning and financial execution:
 1. **Unlocks AI Buyer Revenue:** Enables merchants to accept autonomous AI shopping agents safely.
-2. **Multi-Turn Deal Adaptation:** Instead of rejecting non-compliant buyer requests and losing the sale, the system calculates the merchant's exact policy ceiling and counter-proposes compliant terms (e.g. converting a rejected 50% discount prompt into a closed 15% sale).
+2. **Multi-Turn Deal Adaptation:** Instead of rejecting non-compliant buyer requests and losing the sale, the system calculates the merchant's exact policy ceiling and counter-proposes compliant terms (e.g. converting a rejected 50% discount prompt into a closed 15% sale, capturing revenue that would otherwise be lost to cart abandonment).
 3. **Deterministic Financial Gating:** Financial mutations (Razorpay Orders) are strictly isolated in pure TypeScript code — zero model output can trigger a payment directly without gate approval.
 
 <table width="100%">
