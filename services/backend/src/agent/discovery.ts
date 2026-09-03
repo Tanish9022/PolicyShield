@@ -74,7 +74,7 @@ Return an empty array if nothing matches (do NOT invent products).
     try {
       const startGemini = performance.now();
       const response = await generateContentWithRetry(ai, {
-        model: 'gemini-3.6-flash',
+        model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
         contents: systemPrompt,
         config: {
           temperature: 0,
@@ -95,7 +95,7 @@ Return an empty array if nothing matches (do NOT invent products).
          totalTokens: response.usageMetadata.totalTokenCount
       } : {};
       
-      if (tracer) tracer.recordStage('DISCOVERY_GEMINI', startGemini, 'SUCCESS', undefined, undefined, 'gemini-3.6-flash', usageMetadata);
+      if (tracer) tracer.recordStage('DISCOVERY_GEMINI', startGemini, 'SUCCESS', undefined, undefined, 'gemini-2.5-flash', usageMetadata);
       
       const rawText = response.text || '{}';
       const parsed = JSON.parse(rawText);

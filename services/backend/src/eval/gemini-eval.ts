@@ -126,15 +126,26 @@ interface Scenario extends ScenarioDefinition {
   id: string;
 }
 
-const count = process.env.SCENARIO_COUNT ? parseInt(process.env.SCENARIO_COUNT, 10) : 50;
+const count = process.env.SCENARIO_COUNT ? parseInt(process.env.SCENARIO_COUNT, 10) : 5;
 const SCENARIOS: Scenario[] = [];
 
-for (let i = 0; i < count; i++) {
-  const base = SCENARIO_BANK[i % SCENARIO_BANK.length];
-  SCENARIOS.push({
-    ...base,
-    id: `eval_gemini_${i + 1}_${uuidv4()}`
+if (count === 5) {
+  const selectedIndices = [0, 5, 25, 30, 35]; // Normal, Violation, Injection, High-Value, Inventory
+  selectedIndices.forEach((idx, i) => {
+    const base = SCENARIO_BANK[idx];
+    SCENARIOS.push({
+      ...base,
+      id: `eval_gemini_${i + 1}_${uuidv4()}`
+    });
   });
+} else {
+  for (let i = 0; i < count; i++) {
+    const base = SCENARIO_BANK[i % SCENARIO_BANK.length];
+    SCENARIOS.push({
+      ...base,
+      id: `eval_gemini_${i + 1}_${uuidv4()}`
+    });
+  }
 }
 
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));

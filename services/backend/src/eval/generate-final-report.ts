@@ -67,7 +67,7 @@ export async function generateFinalReport(writeToDisk: boolean = true) {
   const hasStubGemini = geminiStageEvents.some(e => e.model === 'stub-model');
   let geminiMode = 'UNKNOWN';
   if (hasLiveGemini && !hasStubGemini) {
-    geminiMode = 'LIVE (gemini-3.6-flash)';
+    geminiMode = 'LIVE (gemini-2.5-flash)';
   } else if (hasStubGemini && !hasLiveGemini) {
     geminiMode = 'STUB_AI (Pass-through adaptation)';
   } else if (hasLiveGemini && hasStubGemini) {

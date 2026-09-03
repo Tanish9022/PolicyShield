@@ -65,7 +65,7 @@ Constraints:
     try {
       const startGemini = performance.now();
       const response = await generateContentWithRetry(ai, {
-        model: 'gemini-3.6-flash',
+        model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
         contents: systemPrompt,
         config: {
           temperature: 0,
@@ -88,7 +88,7 @@ Constraints:
          totalTokens: response.usageMetadata.totalTokenCount
       } : {};
       
-      if (tracer) tracer.recordStage('COMPARISON_GEMINI', startGemini, 'SUCCESS', undefined, undefined, 'gemini-3.6-flash', usageMetadata);
+      if (tracer) tracer.recordStage('COMPARISON_GEMINI', startGemini, 'SUCCESS', undefined, undefined, 'gemini-2.5-flash', usageMetadata);
       
       const rawText = response.text || '{}';
       const parsed = JSON.parse(rawText);

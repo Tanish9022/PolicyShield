@@ -43,7 +43,7 @@ CRITICAL INSTRUCTIONS:
   let response;
   try {
     response = await generateContentWithRetry(ai!, {
-      model: 'gemini-3.6-flash',
+      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
       contents: systemPrompt,
       config: {
         temperature: 0,
@@ -81,8 +81,8 @@ CRITICAL INSTRUCTIONS:
     // API outage (bad key, wrong model access, network block, quota) gets
     // misread later as "0% structured output success" / bad model quality,
     // when actually zero real model calls ever completed.
-    console.error(`[GEMINI CALL FAILED] model=gemini-3.6-flash status=${e?.status} message=${e?.message}`);
-    if (tracer) tracer.recordStage('GEMINI', startGemini, 'FAILURE', undefined, e.message, 'gemini-3.6-flash');
+    console.error(`[GEMINI CALL FAILED] model=gemini-2.5-flash status=${e?.status} message=${e?.message}`);
+    if (tracer) tracer.recordStage('GEMINI', startGemini, 'FAILURE', undefined, e.message, 'gemini-2.5-flash');
     throw e;
   }
   
@@ -92,7 +92,7 @@ CRITICAL INSTRUCTIONS:
      totalTokens: response.usageMetadata.totalTokenCount
   } : {};
 
-  if (tracer) tracer.recordStage('GEMINI', startGemini, 'SUCCESS', undefined, undefined, 'gemini-3.6-flash', usageMetadata);
+  if (tracer) tracer.recordStage('GEMINI', startGemini, 'SUCCESS', undefined, undefined, 'gemini-2.5-flash', usageMetadata);
 
   const startSchema = performance.now();
   let parsed;
