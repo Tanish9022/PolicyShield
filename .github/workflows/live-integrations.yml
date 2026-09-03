@@ -21,6 +21,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build Project
+        run: npm run build
+
       - name: Run Gemini 50-Case Evaluation
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -49,6 +52,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Build Project
+        run: npm run build
 
       - name: Run Razorpay Live Smoke Test
         env:

@@ -24,6 +24,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build Project
+        run: npm run build
+
       - name: Run 1,000-case Eval
         run: npx tsx services/backend/src/eval/benchmark.ts > benchmark-report.txt
 
