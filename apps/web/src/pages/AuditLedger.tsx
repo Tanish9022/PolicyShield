@@ -25,7 +25,10 @@ export default function AuditLedger() {
     try {
       const res = await fetch(`${API_BASE}/api/intent/${intentId}/checkout`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-merchant-id': 'merchant_1'
+        }
       });
       const data = await res.json();
       if (res.ok && data.razorpay_order_id) {

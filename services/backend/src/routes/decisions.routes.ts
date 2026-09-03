@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
   try {
     const actions = await db.prepare(`
       SELECT 
-        a.action_id, a.state, a.decision, a.action_type, a.created_at, a.updated_at, a.intent_id,
+        a.action_id, a.state, a.decision, a.action_type, a.created_at, a.updated_at, a.intent_id, a.razorpay_order_id,
         i.buyer_input, i.merchant_id
       FROM actions a
       JOIN intents i ON a.intent_id = i.intent_id

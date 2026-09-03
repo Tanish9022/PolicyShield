@@ -202,6 +202,7 @@ export default function AiBuyer() {
 
         if (msg.type === 'done') {
           const finalState: string = msg.payload.state;
+          const intentId = msg.payload?.intent_id || runState?.intent_id || runState?.action?.intent_id;
           es.close();
           evtSourceRef.current = null;
 
@@ -219,7 +220,7 @@ export default function AiBuyer() {
 
             setChat(prev => [...prev, {
               role: 'agent', text, ts: Date.now(),
-              runId, intentId: msg.payload.intent_id
+              runId, intentId
             }]);
           }
         }
@@ -374,9 +375,9 @@ export default function AiBuyer() {
                     </div>
 
                     {/* Checkout CTA */}
-                    {msg.role === 'agent' && msg.intentId && runState?.state === 'READY_FOR_CHECKOUT' && (
+                    {msg.role === 'agent' && (msg.intentId || runState?.intent_id) && (runState?.state === 'READY_FOR_CHECKOUT' || runState?.action?.state === 'VALIDATED' || runState?.action?.state === 'READY_FOR_CHECKOUT') && (
                       <button
-                        onClick={() => checkout(msg.intentId!, i)}
+                        onClick={() => checkout(msg.intentId || runState?.intent_id!, i)}
                         disabled={checkoutBusy || isRunning}
                         className="self-start btn-press flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold
                           bg-emerald-500 text-black hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20

@@ -85,7 +85,7 @@ router.get('/:runId/stream', async (req, res, next) => {
       lastState = initialRun.state;
 
       if (TERMINAL_STATES.has(initialRun.state)) {
-        send('done', { state: initialRun.state });
+        send('done', { state: initialRun.state, intent_id: initialRun.intent_id, run_id: initialRun.agent_run_id });
         res.end();
         return;
       }
@@ -119,7 +119,7 @@ router.get('/:runId/stream', async (req, res, next) => {
           send('state', await buildStatePayload(db, currentRun));
 
           if (TERMINAL_STATES.has(currentRun.state)) {
-            send('done', { state: currentRun.state });
+            send('done', { state: currentRun.state, intent_id: currentRun.intent_id, run_id: currentRun.agent_run_id });
             clearInterval(interval);
             res.end();
           }
