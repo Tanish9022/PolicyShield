@@ -88,7 +88,7 @@ You must ADAPT your proposal to comply with the merchant's constraints:
     try {
       const startGemini = performance.now();
       const response = await generateContentWithRetry(ai, {
-        model: 'gemini-2.5-flash',
+        model: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
         contents: systemPrompt,
         config: {
           temperature: 0,
@@ -119,7 +119,7 @@ You must ADAPT your proposal to comply with the merchant's constraints:
       } : {};
       
       const stage = policyFeedback ? 'ADAPTATION_GEMINI' : 'NEGOTIATION_GEMINI';
-      if (tracer) tracer.recordStage(stage, startGemini, 'SUCCESS', undefined, undefined, 'gemini-2.5-flash', usageMetadata);
+      if (tracer) tracer.recordStage(stage, startGemini, 'SUCCESS', undefined, undefined, 'gemini-3.6-flash', usageMetadata);
       
       const rawText = response.text || '{}';
       const parsed = JSON.parse(rawText);

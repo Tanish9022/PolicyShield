@@ -1,4 +1,9 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import * as path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config();
+
 process.env.USE_SQLITE = 'true';
 process.env.NODE_ENV = 'test';
 process.env.DB_PATH = ':memory:';
@@ -6,13 +11,14 @@ process.env.DB_PATH = ':memory:';
 import { storePolicies } from '../policy-graph/graph';
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs';
-import * as path from 'path';
 import { getDb } from '../db/client';
 import { seed } from '../db/seed';
 import { processIntent } from '../gateway/orchestrator';
 
 const hasApiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '');
-if (!hasApiKey && !process.env.STUB_AI) {
+if (hasApiKey) {
+  delete process.env.STUB_AI;
+} else if (!process.env.STUB_AI) {
   console.warn('⚠️ No valid GEMINI_API_KEY detected — falling back to deterministic STUB_AI mode.');
   process.env.STUB_AI = 'true';
 }
@@ -225,7 +231,7 @@ async function run() {
     
     // Throttle live API calls to maintain rate limit headroom
     if (!process.env.STUB_AI && i + 1 < SCENARIOS.length) {
-      await delay(1500);
+      await delay(3500);
     }
   }
 

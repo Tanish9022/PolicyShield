@@ -65,7 +65,7 @@ Constraints:
     try {
       const startGemini = performance.now();
       const response = await generateContentWithRetry(ai, {
-        model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+        model: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
         contents: systemPrompt,
         config: {
           temperature: 0,
@@ -73,11 +73,10 @@ Constraints:
           responseSchema: {
             type: Type.OBJECT,
             properties: {
-              decision: { type: Type.STRING, enum: ['SELECT', 'ESCALATE'] },
               selected_product_id: { type: Type.STRING },
-              reasoning_evidence: { type: Type.ARRAY, items: { type: Type.STRING } },
+              explanation: { type: Type.STRING }
             },
-            required: ['decision', 'selected_product_id', 'reasoning_evidence']
+            required: ['selected_product_id', 'explanation']
           }
         }
       });
@@ -88,7 +87,7 @@ Constraints:
          totalTokens: response.usageMetadata.totalTokenCount
       } : {};
       
-      if (tracer) tracer.recordStage('COMPARISON_GEMINI', startGemini, 'SUCCESS', undefined, undefined, 'gemini-2.5-flash', usageMetadata);
+      if (tracer) tracer.recordStage('COMPARISON_GEMINI', startGemini, 'SUCCESS', undefined, undefined, 'gemini-3.6-flash', usageMetadata);
       
       const rawText = response.text || '{}';
       const parsed = JSON.parse(rawText);

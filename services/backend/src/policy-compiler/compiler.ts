@@ -13,7 +13,7 @@ export async function compilePolicies(
 
   // Use Gemini to parse NL into structured policy rules
   const response = await ai.models.generateContent({
-    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    model: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
     contents: `Parse these merchant rules into typed policies:
 ${naturalLanguageText}`,
     config: {
