@@ -1,16 +1,22 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+process.env.USE_SQLITE = 'true';
+process.env.NODE_ENV = 'test';
+process.env.DB_PATH = ':memory:';
+
 // Ensure STUB_RAZORPAY is disabled
 process.env.STUB_RAZORPAY = '';
 process.env.STUB_AI = '';
 
 import { getDb } from '../db/client';
+import { seed } from '../db/seed';
 import { resolveUnknownExecution } from '../gateway/orchestrator';
 import { randomUUID } from 'crypto';
 
 async function run() {
   console.log("=== STARTING EXECUTION_UNKNOWN RECOVERY TEST ===");
+  await seed(false);
   const db = getDb();
   const { RazorpayAdapter } = await import('../execution/razorpay');
 
@@ -27,12 +33,12 @@ async function run() {
     console.log(`Created order: ${order.id}`);
 
     console.log(`Injecting into DB with state=EXECUTION_UNKNOWN and razorpay_order_id=${order.id}...`);
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO intents (intent_id, request_id, merchant_id, buyer_input, received_at)
       VALUES (?, ?, ?, ?, ?)
     `).run(intentId, 'req_test', 'MERCH_1', 'test input', new Date().toISOString());
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO actions (action_id, intent_id, merchant_id, idempotency_key, external_receipt, razorpay_order_id, action_type, state, decision, policy_version, parameters_json)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(actionId, intentId, 'MERCH_1', idempotencyKey, receipt, order.id, 'CREATE_ORDER', 'EXECUTION_UNKNOWN', 'APPROVE', 'v1', JSON.stringify({ product_id: 'prod_1' }));
@@ -68,12 +74,12 @@ async function run() {
     console.log(`Created order: ${order.id} with receipt ${receipt}`);
 
     console.log(`Injecting into DB with state=EXECUTION_UNKNOWN and razorpay_order_id=NULL...`);
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO intents (intent_id, request_id, merchant_id, buyer_input, received_at)
       VALUES (?, ?, ?, ?, ?)
     `).run(intentId, 'req_test', 'MERCH_1', 'test input', new Date().toISOString());
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO actions (action_id, intent_id, merchant_id, idempotency_key, external_receipt, razorpay_order_id, action_type, state, decision, policy_version, parameters_json)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(actionId, intentId, 'MERCH_1', idempotencyKey, receipt, null, 'CREATE_ORDER', 'EXECUTION_UNKNOWN', 'APPROVE', 'v1', JSON.stringify({ product_id: 'prod_1' }));
