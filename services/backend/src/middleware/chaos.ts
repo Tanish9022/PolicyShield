@@ -4,6 +4,10 @@ import { Request, Response, NextFunction } from 'express';
 // Pass 'x-chaos-drop' header with a probability (0-1) to drop the response.
 
 export function chaosMiddleware(req: Request, res: Response, next: NextFunction): void {
+  if (process.env.NODE_ENV === 'production') {
+    return next();
+  }
+
   const dropProb = parseFloat(req.headers['x-chaos-drop'] as string);
   
   if (!isNaN(dropProb) && Math.random() < dropProb) {

@@ -90,13 +90,28 @@ Constraints:
       
       if (tracer) tracer.recordStage('COMPARISON_GEMINI', startGemini, 'SUCCESS', undefined, undefined, 'gemini-3.6-flash', usageMetadata);
       
-      const parsed = JSON.parse(response.text || '{}');
-      decision = {
-        decision: parsed.decision,
-        selected_product_id: parsed.selected_product_id,
-        reasoning_evidence: parsed.reasoning_evidence || [],
-        next_step: parsed.decision === 'SELECT' ? 'NEGOTIATING' : 'ESCALATE'
-      };
+      const rawText = response.text || '{}';
+      const parsed = JSON.parse(rawText);
+      const startSchema = performance.now();
+      const { ComparisonOutputSchema } = await import('@policyshield/shared');
+      const validated = ComparisonOutputSchema.safeParse(parsed);
+      if (validated.success) {
+        if (tracer) tracer.recordStage('SCHEMA', startSchema, 'SUCCESS');
+        decision = {
+          decision: validated.data.decision,
+          selected_product_id: validated.data.selected_product_id || undefined,
+          reasoning_evidence: validated.data.reasoning_evidence,
+          next_step: validated.data.decision === 'SELECT' ? 'NEGOTIATING' : 'ESCALATE'
+        };
+      } else {
+        if (tracer) tracer.recordStage('SCHEMA', startSchema, 'FAILURE', undefined, 'COMPARISON_SCHEMA_ERROR');
+        decision = {
+          decision: parsed.decision || 'ESCALATE',
+          selected_product_id: parsed.selected_product_id,
+          reasoning_evidence: parsed.reasoning_evidence || [],
+          next_step: parsed.decision === 'SELECT' ? 'NEGOTIATING' : 'ESCALATE'
+        };
+      }
     } catch (e: any) {
       if (tracer) tracer.recordStage('COMPARISON_GEMINI', startTotal, 'FAILURE', undefined, e.message);
       throw e;

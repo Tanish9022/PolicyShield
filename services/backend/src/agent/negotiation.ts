@@ -37,11 +37,15 @@ Constraints:
 `;
 
   if (policyFeedback) {
+    const maxAllowed = policyFeedback.metadata?.final_discount ?? policyFeedback.metadata?.policy_max_discount;
     systemPrompt += `\n\nWARNING: Your previous proposal was REJECTED by the merchant's deterministic policy gate!
 Policy Feedback:
 ${JSON.stringify(policyFeedback, null, 2)}
 
-You must ADAPT your proposal to comply with the merchant's allowed_value or policy constraints. Do not propose the same rejected value again.`;
+You must ADAPT your proposal to comply with the merchant's constraints:
+- If a discount was rejected for exceeding limits, propose the MAXIMUM allowable discount (specifically ${maxAllowed !== undefined ? maxAllowed : 'the policy ceiling'}%) to maximize value for the buyer while strictly satisfying the policy. Do not propose an arbitrary lower number.
+- If no discount is permitted, set 'type' to 'CREATE_ORDER' with discount_percent 0.
+- Do not propose the same rejected value again.`;
   }
 
   let result: { proposed_action: ProposedAction, reasoning: string };
@@ -110,14 +114,25 @@ You must ADAPT your proposal to comply with the merchant's allowed_value or poli
       const stage = policyFeedback ? 'ADAPTATION_GEMINI' : 'NEGOTIATION_GEMINI';
       if (tracer) tracer.recordStage(stage, startGemini, 'SUCCESS', undefined, undefined, 'gemini-3.6-flash', usageMetadata);
       
-      const parsed = JSON.parse(response.text || '{}');
+      const rawText = response.text || '{}';
+      const parsed = JSON.parse(rawText);
+      const startSchema = performance.now();
       const { ProposedActionSchema } = await import('@policyshield/shared');
-      const validatedAction = ProposedActionSchema.parse(parsed.proposed_action);
+      const actionParse = ProposedActionSchema.safeParse(parsed.proposed_action);
       
-      result = {
-        proposed_action: validatedAction as ProposedAction,
-        reasoning: parsed.reasoning
-      };
+      if (actionParse.success && typeof parsed.reasoning === 'string') {
+        if (tracer) tracer.recordStage('SCHEMA', startSchema, 'SUCCESS');
+        result = {
+          proposed_action: actionParse.data as ProposedAction,
+          reasoning: parsed.reasoning
+        };
+      } else {
+        if (tracer) tracer.recordStage('SCHEMA', startSchema, 'FAILURE', undefined, 'NEGOTIATION_SCHEMA_ERROR');
+        result = {
+          proposed_action: (actionParse.success ? actionParse.data : parsed.proposed_action) as ProposedAction,
+          reasoning: parsed.reasoning || 'Default negotiation'
+        };
+      }
     } catch (e: any) {
       const stage = policyFeedback ? 'ADAPTATION_GEMINI' : 'NEGOTIATION_GEMINI';
       if (tracer) tracer.recordStage(stage, startTotal, 'FAILURE', undefined, e.message);

@@ -93,8 +93,18 @@ Return an empty array if nothing matches (do NOT invent products).
       
       if (tracer) tracer.recordStage('DISCOVERY_GEMINI', startGemini, 'SUCCESS', undefined, undefined, 'gemini-3.6-flash', usageMetadata);
       
-      const parsed = JSON.parse(response.text || '{}');
-      productIds = parsed.product_ids || [];
+      const rawText = response.text || '{}';
+      const parsed = JSON.parse(rawText);
+      const startSchema = performance.now();
+      const { DiscoveryOutputSchema } = await import('@policyshield/shared');
+      const validated = DiscoveryOutputSchema.safeParse(parsed);
+      if (validated.success) {
+        if (tracer) tracer.recordStage('SCHEMA', startSchema, 'SUCCESS');
+        productIds = validated.data.product_ids;
+      } else {
+        if (tracer) tracer.recordStage('SCHEMA', startSchema, 'FAILURE', undefined, 'DISCOVERY_SCHEMA_ERROR');
+        productIds = parsed.product_ids || [];
+      }
     } catch (e: any) {
       if (tracer) tracer.recordStage('DISCOVERY_GEMINI', startTotal, 'FAILURE', undefined, e.message);
       throw e;

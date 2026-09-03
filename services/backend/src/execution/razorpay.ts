@@ -69,18 +69,20 @@ export const RazorpayAdapter = {
         key_secret: process.env.RAZORPAY_KEY_SECRET!
       });
       
-      // Fetch latest orders and filter in-memory since the API receipt filter has indexing lag in test mode
-      const orders = await rzp.orders.all({ count: 50 });
-      if (orders && orders.items) {
-        const found = orders.items.find((o: any) => o.receipt === receiptId);
+      const [recentRes, filteredRes] = await Promise.allSettled([
+        rzp.orders.all({ count: 100 }),
+        rzp.orders.all({ receipt: receiptId })
+      ]);
+
+      if (recentRes.status === 'fulfilled' && recentRes.value?.items) {
+        const found = recentRes.value.items.find((o: any) => o.receipt === receiptId);
         if (found) return found;
       }
-      
-      // Fallback to API query filter just in case it's an older order
-      const filteredOrders = await rzp.orders.all({ receipt: receiptId });
-      if (filteredOrders && filteredOrders.items && filteredOrders.items.length > 0) {
-        return filteredOrders.items[0];
+
+      if (filteredRes.status === 'fulfilled' && filteredRes.value?.items && filteredRes.value.items.length > 0) {
+        return filteredRes.value.items[0];
       }
+
       return null;
     } catch (error) {
       console.error('Razorpay fetch error:', error);

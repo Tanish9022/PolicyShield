@@ -35,6 +35,18 @@ export const AgentOutputSchema = z.object({
   explanation: z.string().optional(),
 });
 
+export const DiscoveryOutputSchema = z.object({
+  product_ids: z.array(z.string()),
+});
+export type DiscoveryOutput = z.infer<typeof DiscoveryOutputSchema>;
+
+export const ComparisonOutputSchema = z.object({
+  decision: z.enum(['SELECT', 'ESCALATE']),
+  selected_product_id: z.string().optional().nullable(),
+  reasoning_evidence: z.array(z.string()).default([]),
+});
+export type ComparisonOutput = z.infer<typeof ComparisonOutputSchema>;
+
 export type AgentOutput = z.infer<typeof AgentOutputSchema>;
 export type AgentDecision = z.infer<typeof AgentDecisionSchema>;
 export type ProposedAction = z.infer<typeof ProposedActionSchema>;

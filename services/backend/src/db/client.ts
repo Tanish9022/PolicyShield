@@ -59,9 +59,9 @@ export class PgWrapper {
 let dbWrapper: PgWrapper | null = null;
 
 export function getDb(): any {
-  if (process.env.NODE_ENV === 'test') {
+  if (process.env.NODE_ENV === 'test' || process.env.USE_SQLITE === 'true' || (!process.env.DATABASE_URL && process.env.NODE_ENV !== 'production')) {
     if (sqliteDb) return sqliteDb;
-    sqliteDb = new Database(process.env.DB_PATH || ':memory:');
+    sqliteDb = new Database(process.env.DB_PATH || './policyshield.db');
     try {
       const schemaPath = path.join(__dirname, 'schema.sql');
       const schema = fs.readFileSync(schemaPath, 'utf-8');
