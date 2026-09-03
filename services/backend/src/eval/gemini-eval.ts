@@ -11,8 +11,9 @@ import { getDb } from '../db/client';
 import { seed } from '../db/seed';
 import { processIntent } from '../gateway/orchestrator';
 
-if (!process.env.GEMINI_API_KEY && !process.env.STUB_AI) {
-  console.warn('No GEMINI_API_KEY set and STUB_AI not set — falling back to STUB_AI so the script can run. Set GEMINI_API_KEY for a real evaluation.');
+const hasApiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '');
+if (!hasApiKey && !process.env.STUB_AI) {
+  console.warn('⚠️ No valid GEMINI_API_KEY detected — falling back to deterministic STUB_AI mode.');
   process.env.STUB_AI = 'true';
 }
 
@@ -23,10 +24,10 @@ async function initEvalContext() {
   const db = getDb();
 
   // Seed evaluation-specific catalog & inventory
-  db.prepare(`INSERT OR REPLACE INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_test', '${merchantId}', 'Test Product', 1000, 'INR')`).run();
-  db.prepare(`INSERT OR REPLACE INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_high', '${merchantId}', 'High Value Product', 60000, 'INR')`).run();
-  db.prepare(`INSERT OR REPLACE INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_test', '${merchantId}', 10)`).run();
-  db.prepare(`INSERT OR REPLACE INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_high', '${merchantId}', 2)`).run(); 
+  await db.prepare(`INSERT INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_test', '${merchantId}', 'Test Product', 1000, 'INR') ON CONFLICT (product_id) DO UPDATE SET price = 1000, name = 'Test Product'`).run();
+  await db.prepare(`INSERT INTO products (product_id, merchant_id, name, price, currency) VALUES ('prod_high', '${merchantId}', 'High Value Product', 60000, 'INR') ON CONFLICT (product_id) DO UPDATE SET price = 60000, name = 'High Value Product'`).run();
+  await db.prepare(`INSERT INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_test', '${merchantId}', 10) ON CONFLICT (product_id) DO UPDATE SET stock_level = 10`).run();
+  await db.prepare(`INSERT INTO inventory (product_id, merchant_id, stock_level) VALUES ('prod_high', '${merchantId}', 2) ON CONFLICT (product_id) DO UPDATE SET stock_level = 2`).run(); 
 
   await storePolicies({
     merchant_id: merchantId,
