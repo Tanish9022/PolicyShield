@@ -65,12 +65,19 @@ You must ADAPT your proposal to comply with the merchant's constraints:
        discount = policyFeedback.metadata.final_discount;
     }
 
+    let quantity = 1;
+    const qtyMatch = intent.buyer_input.match(/(?:all\s+)?(\d+)\s*(?:available\s+)?(?:units?|items?|pcs?|pieces?)?/i);
+    if (qtyMatch && parseInt(qtyMatch[1], 10) > 0 && !intent.buyer_input.includes('₹' + qtyMatch[1]) && !intent.buyer_input.includes(qtyMatch[1] + '%')) {
+      quantity = parseInt(qtyMatch[1], 10);
+    }
+
     result = {
       proposed_action: {
         type: discount > 0 ? 'APPLY_DISCOUNT' : 'CREATE_ORDER',
         product_id: candidate.product_id,
         discount_percent: discount,
-        amount: candidate.price * (1 - discount / 100),
+        quantity,
+        amount: candidate.price * quantity * (1 - discount / 100),
         base_price: candidate.price
       },
       reasoning: 'Stub negotiation'

@@ -24,6 +24,7 @@ jobs:
       - name: Run Gemini 50-Case Evaluation
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SCENARIO_COUNT: "50"
         run: npx tsx services/backend/src/eval/gemini-eval.ts > gemini-report.txt
 
       - name: Upload Gemini Report

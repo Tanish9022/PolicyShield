@@ -6,6 +6,7 @@ process.env.STUB_RAZORPAY = '';
 process.env.STUB_AI = '';
 
 import { getDb } from '../db/client';
+import { seed } from '../db/seed';
 import { processIntent, checkoutAction } from '../gateway/orchestrator';
 import { executeAction } from '../execution/executor';
 import { IntentRequest } from '@policyshield/shared';
@@ -18,6 +19,7 @@ async function runLiveSmokeTest() {
   if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not set in .env");
   if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) throw new Error("Razorpay credentials not set in .env");
 
+  await seed(false);
   const db = getDb();
   const merchantId = 'merchant_live_test';
 

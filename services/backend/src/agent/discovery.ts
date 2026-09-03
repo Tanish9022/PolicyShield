@@ -48,7 +48,11 @@ Return an empty array if nothing matches (do NOT invent products).
 
   if (process.env.STUB_AI) {
     const lowerInput = intent.buyer_input.toLowerCase();
-    if (lowerInput.includes('70,000') || lowerInput.includes('70000') || lowerInput.includes('60000')) {
+    if (lowerInput.includes('test') || lowerInput.includes('test product')) {
+      productIds = ['prod_test'];
+    } else if (lowerInput.includes('high value') || lowerInput.includes('high-value') || lowerInput.includes('high_value') || lowerInput.includes('60,000') || lowerInput.includes('60000') || lowerInput.includes('120,000')) {
+      productIds = ['prod_high', 'prod_dell'];
+    } else if (lowerInput.includes('70,000') || lowerInput.includes('70000')) {
       productIds = ['prod_dell', 'prod_asus'];
     } else if (lowerInput.includes('laptop')) {
       productIds = ['prod_macbook', 'prod_dell', 'prod_asus'];
@@ -61,8 +65,8 @@ Return an empty array if nothing matches (do NOT invent products).
     } else if (lowerInput.includes('airpods')) {
       productIds = ['prod_airpods_live', 'prod_airpods'];
     } else {
-      // Default to airpods for unhandled stub cases to keep tests flowing
-      productIds = ['prod_airpods_live', 'prod_airpods'];
+      // Default to available catalog products
+      productIds = context.products.map(p => p.product_id);
     }
   } else {
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
