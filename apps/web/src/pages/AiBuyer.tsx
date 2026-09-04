@@ -563,7 +563,7 @@ export default function AiBuyer() {
                       <div key={i} className="flex items-center justify-between">
                         <span className="text-white/60 truncate mr-2">{c.name}</span>
                         <span className="font-code text-emerald-300 shrink-0">
-                          ₹{(c.base_price / 100).toLocaleString('en-IN')}
+                          ₹{(c.price ?? c.base_price ?? 0).toLocaleString('en-IN')}
                         </span>
                       </div>
                     ))}
