@@ -73,10 +73,11 @@ Constraints:
           responseSchema: {
             type: Type.OBJECT,
             properties: {
+              decision: { type: Type.STRING, enum: ['SELECT', 'ESCALATE'] },
               selected_product_id: { type: Type.STRING },
-              explanation: { type: Type.STRING }
+              reasoning_evidence: { type: Type.ARRAY, items: { type: Type.STRING } }
             },
-            required: ['selected_product_id', 'explanation']
+            required: ['decision', 'selected_product_id', 'reasoning_evidence']
           }
         }
       });
@@ -104,11 +105,12 @@ Constraints:
         };
       } else {
         if (tracer) tracer.recordStage('SCHEMA', startSchema, 'FAILURE', undefined, 'COMPARISON_SCHEMA_ERROR');
+        const resolvedDecision = (parsed.decision || (parsed.selected_product_id ? 'SELECT' : 'ESCALATE')) as 'SELECT' | 'ESCALATE';
         decision = {
-          decision: parsed.decision || 'ESCALATE',
+          decision: resolvedDecision,
           selected_product_id: parsed.selected_product_id,
-          reasoning_evidence: parsed.reasoning_evidence || [],
-          next_step: parsed.decision === 'SELECT' ? 'NEGOTIATING' : 'ESCALATE'
+          reasoning_evidence: Array.isArray(parsed.reasoning_evidence) ? parsed.reasoning_evidence : (parsed.explanation ? [parsed.explanation] : []),
+          next_step: resolvedDecision === 'SELECT' ? 'NEGOTIATING' : 'ESCALATE'
         };
       }
     } catch (e: any) {

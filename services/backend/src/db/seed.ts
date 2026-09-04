@@ -10,7 +10,7 @@ dotenv.config({ path: path.join(__dirname, '../../../../.env') });
 const graph: PolicyGraph = {
   merchant_id: 'merchant_1',
   version: uuidv4() as any,
-  source_text: 'Maximum discount allowed is 15%. Orders above 50000 require approval.',
+  source_text: 'Maximum discount allowed is 15%. Orders above 100000 require approval.',
   compiled_at: new Date().toISOString(),
   rules: [
     {
@@ -24,9 +24,9 @@ const graph: PolicyGraph = {
     {
       policy_id: 'pol_2' as any,
       rule_type: 'APPROVAL_THRESHOLD' as any,
-      description: 'Orders above 50000 require approval.',
+      description: 'Orders above 100000 require approval.',
       conditions: [],
-      parameters: { threshold_amount: 50000 },
+      parameters: { threshold_amount: 100000 },
       priority: 1
     },
     {
