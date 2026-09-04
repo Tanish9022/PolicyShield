@@ -13,7 +13,7 @@ router.post('/compile', async (req, res, next) => {
     
     if (result.status === 'SUCCESS' && result.graph) {
       result.graph.merchant_id = input.merchant_id;
-      storePolicies(result.graph);
+      await storePolicies(result.graph);
     }
     
     res.json(result);
@@ -23,7 +23,7 @@ router.post('/compile', async (req, res, next) => {
 });
 
 router.get('/:merchantId', async (req, res) => {
-  const policies = getPolicies(req.params.merchantId);
+  const policies = await getPolicies(req.params.merchantId);
   if (!policies) {
     return res.status(404).json({ error: 'No policies found' });
   }
